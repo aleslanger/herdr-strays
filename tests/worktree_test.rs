@@ -684,6 +684,127 @@ fn the_launcher_script_looks_for_an_existing_pane_before_opening_one() {
     );
 }
 
+/// Drive `scripts/open.sh` against a fixture, returning the herdr command it
+/// decided to run.
+///
+/// The script is given a stand-in for the herdr CLI: it answers `pane list`
+/// with `pane_list`, and appends anything else to a file, which is the decision
+/// under test.
+fn launcher_decision(pane_list: &str, workspace: &str) -> String {
+    let dir = tempfile::tempdir().expect("tempdir");
+    let fixture = dir.path().join("panes.json");
+    let calls = dir.path().join("calls.txt");
+    let fake = dir.path().join("fake-herdr");
+
+    std::fs::write(&fixture, pane_list).unwrap();
+    std::fs::write(
+        &fake,
+        "#!/bin/sh\n\
+         if [ \"$1\" = pane ] && [ \"$2\" = list ]; then cat \"$FIXTURE\"; exit 0; fi\n\
+         printf '%s' \"$*\" >> \"$CALLS\"\n",
+    )
+    .unwrap();
+
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt;
+        std::fs::set_permissions(&fake, std::fs::Permissions::from_mode(0o755)).unwrap();
+    }
+
+    let status = Command::new("sh")
+        .arg("scripts/open.sh")
+        .env("HERDR_BIN_PATH", &fake)
+        .env("HERDR_WORKSPACE_ID", workspace)
+        .env("FIXTURE", &fixture)
+        .env("CALLS", &calls)
+        .output()
+        .expect("the launcher should run");
+    assert!(
+        status.status.success(),
+        "launcher failed: {}",
+        String::from_utf8_lossy(&status.stderr)
+    );
+
+    std::fs::read_to_string(&calls).unwrap_or_default()
+}
+
+#[test]
+fn the_launcher_finds_a_pane_whose_record_does_not_start_with_an_agent_key() {
+    // Regression: records used to be split on the literal `{"agent`, which
+    // assumed every pane carries an `agent*` key first. herdr serialises keys
+    // alphabetically, so a pane with no agent starts at `cwd` — it was glued
+    // onto the preceding record and the *previous* pane's id was acted on.
+    //
+    // Here the strays pane has no agent key, and the pane before it is someone
+    // else's focused shell. Reading the wrong record closes that shell.
+    // One line, the way herdr actually answers: a multi-line fixture would let
+    // a line-at-a-time parser fail for the wrong reason.
+    let panes = concat!(
+        r#"{"id":"cli:pane:list","result":{"panes":["#,
+        r#"{"agent":"claude","cwd":"/repo","focused":true,"label":"shell","pane_id":"w3:p1","workspace_id":"w3"},"#,
+        r#"{"cwd":"/repo","focused":false,"label":"strays","pane_id":"w3:p3","workspace_id":"w3"}"#,
+        r#"],"type":"pane_list"}}"#,
+    );
+
+    let decision = launcher_decision(panes, "w3");
+    assert_eq!(
+        decision, "plugin pane focus w3:p3",
+        "the unfocused strays pane should be focused, not the neighbouring shell"
+    );
+}
+
+#[test]
+fn the_launcher_is_not_fooled_by_objects_nested_inside_a_pane() {
+    // `agent_session` and `scroll` are objects one level deeper than a pane.
+    // Counting them as records would act on an id that is not a pane's.
+    let panes = concat!(
+        r#"{"id":"cli:pane:list","result":{"panes":["#,
+        r#"{"agent_session":{"kind":"id","value":"abc"},"cwd":"/repo","focused":true,"#,
+        r#""label":"strays","pane_id":"w4:p1","scroll":{"offset_from_bottom":0},"workspace_id":"w4"}"#,
+        r#"],"type":"pane_list"}}"#,
+    );
+
+    let decision = launcher_decision(panes, "w4");
+    assert_eq!(
+        decision, "pane close w4:p1",
+        "pressing the key on our own focused pane dismisses it"
+    );
+}
+
+#[test]
+fn the_launcher_opens_a_pane_when_the_workspace_has_none() {
+    // A strays pane exists, but in another workspace: it must not suppress the
+    // one being asked for here.
+    let panes = concat!(
+        r#"{"id":"cli:pane:list","result":{"panes":["#,
+        r#"{"cwd":"/repo","focused":false,"label":"strays","pane_id":"w3:p3","workspace_id":"w3"}"#,
+        r#"],"type":"pane_list"}}"#,
+    );
+
+    let decision = launcher_decision(panes, "w9");
+    assert!(
+        decision.starts_with("plugin pane open"),
+        "expected an open, got {decision:?}"
+    );
+}
+
+#[test]
+fn the_launcher_ignores_a_pane_belonging_to_another_plugin() {
+    // Same workspace, different label: not ours, so it neither blocks the open
+    // nor gets closed.
+    let panes = concat!(
+        r#"{"id":"cli:pane:list","result":{"panes":["#,
+        r#"{"cwd":"/repo","focused":true,"label":"someone-else","pane_id":"w3:p1","workspace_id":"w3"}"#,
+        r#"],"type":"pane_list"}}"#,
+    );
+
+    let decision = launcher_decision(panes, "w3");
+    assert!(
+        decision.starts_with("plugin pane open"),
+        "expected an open, got {decision:?}"
+    );
+}
+
 #[test]
 fn a_project_reports_the_branch_it_is_on() {
     use herdr_strays::git::status::branch_of;

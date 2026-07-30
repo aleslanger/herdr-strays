@@ -15,3 +15,9 @@ shell-words = "1.1.1"
 
 [dev-dependencies]
 tempfile = "3.27.0"
+
+# This binary is built on the user's machine by `herdr plugin install`, so the
+# release profile is tuned for what ships rather than for build time.
+[profile.release]
+lto = "thin"
+strip = true

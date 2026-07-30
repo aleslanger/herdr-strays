@@ -7,7 +7,7 @@ BIN       := target/release/herdr-strays
 HERDR     ?= herdr
 
 .DEFAULT_GOAL := help
-.PHONY: help build release test lint fmt fmt-check check link unlink install reinstall run clean
+.PHONY: help build release test lint fmt fmt-check check audit link unlink install reinstall run clean
 
 help: ## Show this help
 	@grep -hE '^[a-z-]+:.*?## ' $(MAKEFILE_LIST) \
@@ -32,6 +32,11 @@ fmt-check: ## Fail if anything is unformatted
 	cargo fmt --check
 
 check: fmt-check lint test ## Everything CI would run
+
+audit: ## Check dependencies against the RustSec advisory database
+	@command -v cargo-audit >/dev/null 2>&1 || { \
+	  echo "cargo-audit not installed: cargo install cargo-audit"; exit 1; }
+	cargo audit
 
 link: release ## Build, then register this checkout with herdr
 	$(HERDR) plugin link "$(CURDIR)"

@@ -45,16 +45,51 @@ impl std::error::Error for SendError {}
 /// Compose the text handed to the agent.
 ///
 /// The path leads so the agent knows what is being talked about, and the
-/// user's own words follow verbatim. Both are data, not instructions to this
-/// program: nothing here is interpreted, escaped, or run — it is typed into
-/// another process's input as-is.
+/// user's own words follow. Both are data, not instructions to this program:
+/// nothing here is interpreted, escaped, or run.
+///
+/// # Why control characters are stripped
+///
+/// This text is typed into another process's input. A newline there reads as a
+/// submitted line, and the whole point of the hand-off is that the person sees
+/// the prompt before it is sent — so a path from someone else's branch must not
+/// be able to press Enter on their behalf. ANSI escape sequences go for the
+/// same reason: the agent's input is rendered in a terminal, and a path is not
+/// entitled to move the cursor or repaint the screen.
+///
+/// Shell metacharacters are deliberately left alone. They reach no shell (see
+/// [`send`]), and mangling them would corrupt a legitimate prompt about a file
+/// named `$(x)`.
 pub fn compose(path: &Path, prompt: &str) -> String {
+    let path = sanitize(&path.display().to_string());
+    let prompt = sanitize(prompt);
     let prompt = prompt.trim();
+
     if prompt.is_empty() {
-        format!("{}", path.display())
+        path
     } else {
-        format!("{}: {}", path.display(), prompt)
+        format!("{path}: {prompt}")
     }
+}
+
+/// Replacement for a stripped control character.
+///
+/// A space rather than nothing: `a\nb` becoming `ab` would silently invent a
+/// different filename, while `a b` is visibly odd.
+const CONTROL_REPLACEMENT: char = ' ';
+
+/// Drop anything that would act on the receiving terminal rather than appear in
+/// it: C0 controls (including newline and ESC), DEL, and the C1 range.
+fn sanitize(text: &str) -> String {
+    text.chars()
+        .map(|c| {
+            if c.is_control() || ('\u{80}'..='\u{9f}').contains(&c) {
+                CONTROL_REPLACEMENT
+            } else {
+                c
+            }
+        })
+        .collect()
 }
 
 /// Find the agent to send to, preferring one whose cwd is inside `repo`.
@@ -195,6 +230,58 @@ mod tests {
         // characters, because it never reaches a shell.
         let text = compose(&PathBuf::from("a.rs"), "does `rm -rf ~` appear here?");
         assert_eq!(text, "a.rs: does `rm -rf ~` appear here?");
+    }
+
+    #[test]
+    fn a_newline_in_the_path_cannot_submit_on_the_users_behalf() {
+        // A filename from someone else's branch is typed into an agent's input.
+        // Left alone, the newline would read as the user pressing Enter, and
+        // everything after it as a prompt they never wrote.
+        let text = compose(&PathBuf::from("a\nrm -rf ~\n.rs"), "look at this");
+        assert!(!text.contains('\n'), "got {text:?}");
+        assert_eq!(text, "a rm -rf ~ .rs: look at this");
+    }
+
+    #[test]
+    fn a_newline_typed_into_the_prompt_is_flattened_too() {
+        let text = compose(&PathBuf::from("a.rs"), "first\nsecond");
+        assert_eq!(text, "a.rs: first second");
+    }
+
+    #[test]
+    fn an_ansi_escape_in_the_path_cannot_repaint_the_terminal() {
+        // ESC [ 2 J clears the screen; a path is not entitled to do that.
+        let text = compose(&PathBuf::from("\u{1b}[2Jgone.rs"), "hi");
+        assert!(!text.contains('\u{1b}'), "got {text:?}");
+        assert_eq!(text, " [2Jgone.rs: hi");
+    }
+
+    #[test]
+    fn c1_control_characters_are_stripped_as_well() {
+        // U+009B is a single-character CSI: an escape sequence without the ESC.
+        let text = compose(&PathBuf::from("a\u{9b}2Kb.rs"), "hi");
+        assert!(!text.contains('\u{9b}'), "got {text:?}");
+    }
+
+    #[test]
+    fn a_carriage_return_cannot_overwrite_what_came_before() {
+        let text = compose(&PathBuf::from("a.rs"), "visible\rhidden");
+        assert!(!text.contains('\r'), "got {text:?}");
+        assert_eq!(text, "a.rs: visible hidden");
+    }
+
+    #[test]
+    fn ordinary_unicode_in_a_path_survives() {
+        // Stripping controls must not touch legitimate non-ASCII filenames.
+        let text = compose(&PathBuf::from("dokumentů/přehled.rs"), "co je tu?");
+        assert_eq!(text, "dokumentů/přehled.rs: co je tu?");
+    }
+
+    #[test]
+    fn a_prompt_that_is_only_control_characters_leaves_just_the_path() {
+        // Sanitising turns them into spaces, and the existing trim drops those.
+        let text = compose(&PathBuf::from("a.rs"), "\n\r\t");
+        assert_eq!(text, "a.rs");
     }
 
     #[test]

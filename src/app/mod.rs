@@ -3,6 +3,9 @@
 //! State updates return a new `App` rather than mutating in place, so a failed
 //! refresh can never leave a half-updated list behind.
 
+mod prompt;
+mod scroll;
+
 use std::collections::BTreeSet;
 use std::path::{Path, PathBuf};
 
@@ -195,76 +198,6 @@ impl App {
         Self { selected, ..app }.with_diff_loaded()
     }
 
-    /// Total lines the diff pane could render for the current selection.
-    ///
-    /// The scroll offset is clamped against this so the pane cannot be scrolled
-    /// past its own content into blank space.
-    pub fn diff_line_count(&self) -> u16 {
-        let lines = match &self.diff {
-            Diff::Text(lines) => lines.len(),
-            // The placeholder states are two lines of prose.
-            Diff::Binary | Diff::Deleted | Diff::Empty => 2,
-        };
-        u16::try_from(lines).unwrap_or(u16::MAX)
-    }
-
-    /// The furthest the diff can scroll while keeping content on screen.
-    ///
-    /// `viewport` is the rendered height; leaving a couple of lines visible at
-    /// the bottom is what stops the pane from going blank.
-    fn max_diff_scroll(&self, viewport: u16) -> u16 {
-        self.diff_line_count().saturating_sub(viewport.max(1))
-    }
-
-    pub fn scroll_diff_down(self, viewport: u16) -> Self {
-        let max = self.max_diff_scroll(viewport);
-        Self {
-            diff_scroll: self.diff_scroll.saturating_add(1).min(max),
-            ..self
-        }
-    }
-
-    pub fn scroll_diff_up(self) -> Self {
-        Self {
-            diff_scroll: self.diff_scroll.saturating_sub(1),
-            ..self
-        }
-    }
-
-    /// Scroll a whole screen at a time.
-    pub fn page_diff_down(self, viewport: u16) -> Self {
-        let max = self.max_diff_scroll(viewport);
-        let step = viewport.saturating_sub(2).max(1);
-        Self {
-            diff_scroll: self.diff_scroll.saturating_add(step).min(max),
-            ..self
-        }
-    }
-
-    pub fn page_diff_up(self, viewport: u16) -> Self {
-        let step = viewport.saturating_sub(2).max(1);
-        Self {
-            diff_scroll: self.diff_scroll.saturating_sub(step),
-            ..self
-        }
-    }
-
-    /// Jump to the top of the diff.
-    pub fn scroll_diff_home(self) -> Self {
-        Self {
-            diff_scroll: 0,
-            ..self
-        }
-    }
-
-    /// Jump to the end of the diff.
-    pub fn scroll_diff_end(self, viewport: u16) -> Self {
-        Self {
-            diff_scroll: self.max_diff_scroll(viewport),
-            ..self
-        }
-    }
-
     /// Drop any pending status-line message.
     pub fn without_notice(self) -> Self {
         Self {
@@ -301,93 +234,6 @@ impl App {
             notice,
             diff_scroll: scroll,
             ..self.refresh()
-        }
-    }
-
-    /// Open the prompt line for the selected file.
-    ///
-    /// Refuses on rows that name no file, and when no agent is running in that
-    /// file's repository — there would be nowhere to send the text.
-    pub fn begin_prompt(self) -> Self {
-        let Some((root, _)) = self.selected_stray() else {
-            return self.with_notice(Notice::error("select a file to prompt about"));
-        };
-
-        let agents = crate::agent::list(&self.herdr_bin);
-        if crate::agent::pick(&agents, root).is_none() {
-            return self.with_notice(Notice::error(crate::agent::SendError::NoAgent.to_string()));
-        }
-
-        Self {
-            prompt: Some(String::new()),
-            ..self
-        }
-    }
-
-    /// Append a character to the prompt being typed.
-    pub fn prompt_push(self, c: char) -> Self {
-        match self.prompt {
-            Some(mut text) => {
-                text.push(c);
-                Self {
-                    prompt: Some(text),
-                    ..self
-                }
-            }
-            None => self,
-        }
-    }
-
-    /// Remove the last character from the prompt.
-    pub fn prompt_backspace(self) -> Self {
-        match self.prompt {
-            Some(mut text) => {
-                text.pop();
-                Self {
-                    prompt: Some(text),
-                    ..self
-                }
-            }
-            None => self,
-        }
-    }
-
-    /// Abandon the prompt without sending it.
-    pub fn cancel_prompt(self) -> Self {
-        Self {
-            prompt: None,
-            ..self
-        }
-    }
-
-    /// Hand the composed prompt to the agent and close the input line.
-    ///
-    /// The text is typed into the agent's input but NOT submitted: the user
-    /// reads it in place and presses Enter themselves.
-    pub fn send_prompt(self) -> Self {
-        let Some(text) = self.prompt.clone() else {
-            return self;
-        };
-        let Some((root, stray)) = self.selected_stray() else {
-            return self.cancel_prompt();
-        };
-
-        let message = crate::agent::compose(&stray.path, &text);
-        let root = root.clone();
-        let agents = crate::agent::list(&self.herdr_bin);
-
-        let notice = match crate::agent::pick(&agents, &root) {
-            Some(agent) => match crate::agent::send(&self.herdr_bin, agent, &message) {
-                Ok(()) => Notice::info("sent to Claude — press Enter there to run it"),
-                Err(e) => Notice::error(e.to_string()),
-            },
-            None => Notice::error(crate::agent::SendError::NoAgent.to_string()),
-        };
-
-        Self {
-            prompt: None,
-            notice: Some(notice),
-            ..self
         }
     }
 
@@ -581,86 +427,6 @@ fn merge_tracked(root: &Path, strays: Vec<Stray>) -> Vec<Stray> {
 }
 
 #[cfg(test)]
-mod scroll_tests {
-    use super::*;
-    use crate::model::{DiffLine, StrayStatus};
-
-    fn app_with_diff(lines: usize) -> App {
-        let diff = Diff::Text(
-            (0..lines)
-                .map(|i| DiffLine::parse(&format!("+line {i}")))
-                .collect(),
-        );
-        App {
-            projects: vec![ProjectStrays {
-                project: Project {
-                    root: PathBuf::from("/repo"),
-                    name: "repo".into(),
-                },
-                strays: vec![Stray::new(StrayStatus::Modified, "a.rs")],
-                branch: Some("main".into()),
-                error: None,
-            }],
-            rows: vec![crate::tree::Row::File {
-                project: 0,
-                stray: 0,
-                depth: 0,
-            }],
-            selected: 0,
-            collapsed: BTreeSet::new(),
-            diff,
-            diff_scroll: 0,
-            notice: None,
-            should_quit: false,
-            scope: Scope::AllWorkspaces,
-            show_all: false,
-            show_help: false,
-            prompt: None,
-            herdr_bin: "herdr".into(),
-        }
-    }
-
-    #[test]
-    fn paging_down_moves_by_almost_a_screen() {
-        let app = app_with_diff(245).page_diff_down(13);
-        assert_eq!(app.diff_scroll, 11, "a 13-row pane pages by 11");
-    }
-
-    #[test]
-    fn jumping_to_the_end_lands_at_the_last_screenful() {
-        let app = app_with_diff(245).scroll_diff_end(13);
-        assert_eq!(app.diff_scroll, 232, "245 lines minus a 13-row pane");
-    }
-
-    #[test]
-    fn scrolling_cannot_pass_the_end_of_the_diff() {
-        let mut app = app_with_diff(20);
-        for _ in 0..100 {
-            app = app.scroll_diff_down(13);
-        }
-        assert_eq!(app.diff_scroll, 7, "20 lines minus a 13-row pane");
-    }
-
-    #[test]
-    fn a_diff_shorter_than_the_pane_does_not_scroll() {
-        let app = app_with_diff(5).scroll_diff_end(13);
-        assert_eq!(app.diff_scroll, 0, "nothing to scroll to");
-    }
-
-    #[test]
-    fn home_returns_to_the_top() {
-        let app = app_with_diff(245).scroll_diff_end(13).scroll_diff_home();
-        assert_eq!(app.diff_scroll, 0);
-    }
-
-    #[test]
-    fn scrolling_up_stops_at_the_top() {
-        let app = app_with_diff(245).scroll_diff_up().scroll_diff_up();
-        assert_eq!(app.diff_scroll, 0);
-    }
-}
-
-#[cfg(test)]
 mod refresh_scroll_tests {
     use super::*;
     use crate::model::DiffLine;
@@ -716,52 +482,5 @@ mod refresh_scroll_tests {
             herdr_bin: "herdr".into(),
         };
         assert_eq!(app.refresh().diff_scroll, 0);
-    }
-
-    #[test]
-    fn an_open_prompt_captures_typing() {
-        let app = App {
-            projects: Vec::new(),
-            rows: Vec::new(),
-            selected: 0,
-            collapsed: BTreeSet::new(),
-            diff: Diff::Empty,
-            diff_scroll: 0,
-            notice: None,
-            should_quit: false,
-            scope: Scope::AllWorkspaces,
-            show_all: false,
-            show_help: false,
-            prompt: Some(String::new()),
-            herdr_bin: "herdr".into(),
-        };
-
-        let typed = app.prompt_push('h').prompt_push('i').prompt_push('!');
-        assert_eq!(typed.prompt.as_deref(), Some("hi!"));
-
-        let corrected = typed.prompt_backspace();
-        assert_eq!(corrected.prompt.as_deref(), Some("hi"));
-
-        assert_eq!(corrected.cancel_prompt().prompt, None);
-    }
-
-    #[test]
-    fn typing_is_ignored_when_no_prompt_is_open() {
-        let app = App {
-            projects: Vec::new(),
-            rows: Vec::new(),
-            selected: 0,
-            collapsed: BTreeSet::new(),
-            diff: Diff::Empty,
-            diff_scroll: 0,
-            notice: None,
-            should_quit: false,
-            scope: Scope::AllWorkspaces,
-            show_all: false,
-            show_help: false,
-            prompt: None,
-            herdr_bin: "herdr".into(),
-        };
-        assert_eq!(app.prompt_push('x').prompt, None);
     }
 }

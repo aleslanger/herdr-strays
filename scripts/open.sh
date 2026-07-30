@@ -32,21 +32,52 @@ want_ws="${HERDR_WORKSPACE_ID:-}"
 
 # Emit "<pane_id> <focused>" for each of our panes in the target workspace.
 # Written in awk rather than jq: jq is not guaranteed on the minimal PATH.
+#
+# Records are delimited by the `{` that opens each pane object, not by a
+# leading key name. herdr serialises object keys alphabetically, so which key
+# comes first depends on which optional fields a pane happens to carry: a pane
+# with no `agent` would be glued onto the previous record and its label read
+# from the wrong pane.
+#
+# Nested objects (`agent_session`, `scroll`) also open with `{`, so brace depth
+# is tracked and only depth-1 objects inside the `panes` array are taken as
+# records. That is the same rule the Rust side applies (see discover::records).
+#
+# Brace depth has to survive line boundaries, so the lines are joined and the
+# scan runs once in END. herdr answers on a single line today, but a parser
+# that silently mis-reads a pretty-printed one is what is being fixed here.
 found=$(printf '%s' "$panes" | awk -v label="$label" -v want="$want_ws" '
-{
-  # Split the flat JSON into one record per pane object.
-  n = split($0, chunks, /\{"agent/)
-  for (i = 1; i <= n; i++) {
-    rec = chunks[i]
-    if (rec !~ ("\"label\":\"" label "\"")) continue
-    if (want != "" && rec !~ ("\"workspace_id\":\"" want "\"")) continue
+{ doc = doc $0 }
 
-    if (match(rec, /"pane_id":"[^"]+"/)) {
-      id = substr(rec, RSTART + 11, RLENGTH - 12)
-      focused = (rec ~ /"focused":true/) ? "yes" : "no"
-      print id, focused
+END {
+  # Walk the document once, cutting out each top-level pane object.
+  depth = 0
+  start = 0
+  for (c = 1; c <= length(doc); c++) {
+    ch = substr(doc, c, 1)
+
+    if (ch == "{") {
+      depth++
+      # Depth 3 is a record: envelope { result { panes [ { here } ] } }.
+      if (depth == 3 && start == 0) start = c
+    } else if (ch == "}") {
+      if (depth == 3 && start != 0) {
+        emit(substr(doc, start, c - start + 1), label, want)
+        start = 0
+      }
+      depth--
     }
   }
+}
+
+function emit(rec, label, want,   id, focused) {
+  if (rec !~ ("\"label\":\"" label "\"")) return
+  if (want != "" && rec !~ ("\"workspace_id\":\"" want "\"")) return
+  if (!match(rec, /"pane_id":"[^"]+"/)) return
+
+  id = substr(rec, RSTART + 11, RLENGTH - 12)
+  focused = (rec ~ /"focused":true/) ? "yes" : "no"
+  print id, focused
 }')
 
 if [ -z "$found" ]; then
