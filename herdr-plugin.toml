@@ -1,0 +1,34 @@
+# herdr-strays — which files strayed from HEAD.
+#
+# Read-only: this plugin only ever queries git. It never stages, commits,
+# checks out, stashes, or writes to refs/.
+
+id = "aleslanger.strays"
+name = "strays"
+version = "0.1.0"
+min_herdr_version = "0.7.0"
+description = "Which files strayed from HEAD — see the diff, jump to your editor."
+platforms = ["linux", "macos"]
+
+# Run on `herdr plugin install`; skipped by `herdr plugin link`, where a local
+# author builds the working tree themselves. Requires a Rust toolchain.
+[[build]]
+command = ["cargo", "build", "--release"]
+
+# The viewer pane. A pane command resolves against the pane's cwd — the repo —
+# not the plugin root, so the binary is located through $HERDR_PLUGIN_ROOT.
+# `sh -c` here expands that one variable and nothing else: no file path from the
+# worktree ever reaches a shell (see src/editor.rs).
+[[panes]]
+id = "strays"
+title = "strays"
+placement = "split"
+command = ["sh", "-c", "exec \"$HERDR_PLUGIN_ROOT/target/release/herdr-strays\""]
+
+# Summons the pane. Bind this to a key in ~/.config/herdr/config.toml.
+[[actions]]
+id = "open"
+title = "strays: files that strayed from HEAD"
+description = "Open the strayed-file viewer beside the current pane."
+contexts = ["pane", "workspace"]
+command = ["sh", "scripts/open.sh"]
