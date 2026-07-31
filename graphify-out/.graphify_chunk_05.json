@@ -1,0 +1,342 @@
+{
+  "nodes": [
+    {
+      "id": "docs_show_all_show_all_screenshot",
+      "label": "strays Show-All Mode TUI Screenshot",
+      "file_type": "image",
+      "source_file": "/home/ales/projects/herdr-strays/docs/show-all.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "docs_show_all_two_pane_layout",
+      "label": "Two-Pane Layout (Tree + Diff)",
+      "file_type": "rationale",
+      "source_file": "/home/ales/projects/herdr-strays/docs/show-all.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "docs_show_all_show_all_tracked_files_mode",
+      "label": "Show All Tracked Files Mode",
+      "file_type": "rationale",
+      "source_file": "/home/ales/projects/herdr-strays/docs/show-all.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "docs_show_all_multi_project_tree",
+      "label": "Multi-Project Aggregated File Tree",
+      "file_type": "rationale",
+      "source_file": "/home/ales/projects/herdr-strays/docs/show-all.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "docs_show_all_strays_pane_header",
+      "label": "strays Pane Header with Counts (9 in 3 projects)",
+      "file_type": "concept",
+      "source_file": "/home/ales/projects/herdr-strays/docs/show-all.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "docs_show_all_diff_pane",
+      "label": "Diff Pane with Placeholder Hints",
+      "file_type": "concept",
+      "source_file": "/home/ales/projects/herdr-strays/docs/show-all.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "docs_show_all_status_marker_glyphs",
+      "label": "Git Status Marker Glyphs (M, ?)",
+      "file_type": "rationale",
+      "source_file": "/home/ales/projects/herdr-strays/docs/show-all.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "docs_show_all_project_row",
+      "label": "Project Row (name, branch, stray count)",
+      "file_type": "concept",
+      "source_file": "/home/ales/projects/herdr-strays/docs/show-all.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "docs_show_all_directory_folding",
+      "label": "Collapsible Directory Folding",
+      "file_type": "rationale",
+      "source_file": "/home/ales/projects/herdr-strays/docs/show-all.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "docs_show_all_cursor_indicator",
+      "label": "Cursor Indicator (> gutter marker)",
+      "file_type": "concept",
+      "source_file": "/home/ales/projects/herdr-strays/docs/show-all.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "docs_show_all_status_bar",
+      "label": "Bottom Status Bar (mode indicator)",
+      "file_type": "concept",
+      "source_file": "/home/ales/projects/herdr-strays/docs/show-all.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "docs_show_all_api_gateway_project",
+      "label": "api-gateway Example Project (feature/token-expiry)",
+      "file_type": "concept",
+      "source_file": "/home/ales/projects/herdr-strays/docs/show-all.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "docs_show_all_notes_project",
+      "label": "notes Example Project (main)",
+      "file_type": "concept",
+      "source_file": "/home/ales/projects/herdr-strays/docs/show-all.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "docs_show_all_web_app_project",
+      "label": "web-app Example Project (main)",
+      "file_type": "concept",
+      "source_file": "/home/ales/projects/herdr-strays/docs/show-all.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    }
+  ],
+  "edges": [
+    {
+      "source": "docs_show_all_show_all_screenshot",
+      "target": "docs_show_all_two_pane_layout",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "/home/ales/projects/herdr-strays/docs/show-all.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "docs_show_all_show_all_screenshot",
+      "target": "docs_show_all_show_all_tracked_files_mode",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "/home/ales/projects/herdr-strays/docs/show-all.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "docs_show_all_two_pane_layout",
+      "target": "docs_show_all_strays_pane_header",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "/home/ales/projects/herdr-strays/docs/show-all.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "docs_show_all_two_pane_layout",
+      "target": "docs_show_all_diff_pane",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "/home/ales/projects/herdr-strays/docs/show-all.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "docs_show_all_multi_project_tree",
+      "target": "docs_show_all_project_row",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "/home/ales/projects/herdr-strays/docs/show-all.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "docs_show_all_multi_project_tree",
+      "target": "docs_show_all_directory_folding",
+      "relation": "conceptually_related_to",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "/home/ales/projects/herdr-strays/docs/show-all.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "docs_show_all_project_row",
+      "target": "docs_show_all_api_gateway_project",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "/home/ales/projects/herdr-strays/docs/show-all.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "docs_show_all_project_row",
+      "target": "docs_show_all_notes_project",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "/home/ales/projects/herdr-strays/docs/show-all.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "docs_show_all_project_row",
+      "target": "docs_show_all_web_app_project",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "/home/ales/projects/herdr-strays/docs/show-all.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "docs_show_all_show_all_tracked_files_mode",
+      "target": "docs_show_all_status_marker_glyphs",
+      "relation": "conceptually_related_to",
+      "confidence": "INFERRED",
+      "confidence_score": 0.85,
+      "source_file": "/home/ales/projects/herdr-strays/docs/show-all.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "docs_show_all_status_bar",
+      "target": "docs_show_all_show_all_tracked_files_mode",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "/home/ales/projects/herdr-strays/docs/show-all.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "docs_show_all_cursor_indicator",
+      "target": "docs_show_all_directory_folding",
+      "relation": "conceptually_related_to",
+      "confidence": "INFERRED",
+      "confidence_score": 0.85,
+      "source_file": "/home/ales/projects/herdr-strays/docs/show-all.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "docs_show_all_diff_pane",
+      "target": "docs_show_all_cursor_indicator",
+      "relation": "shares_data_with",
+      "confidence": "INFERRED",
+      "confidence_score": 0.95,
+      "source_file": "/home/ales/projects/herdr-strays/docs/show-all.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "docs_show_all_strays_pane_header",
+      "target": "docs_show_all_multi_project_tree",
+      "relation": "shares_data_with",
+      "confidence": "INFERRED",
+      "confidence_score": 0.95,
+      "source_file": "/home/ales/projects/herdr-strays/docs/show-all.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "docs_show_all_status_bar",
+      "target": "docs_show_all_strays_pane_header",
+      "relation": "semantically_similar_to",
+      "confidence": "INFERRED",
+      "confidence_score": 0.75,
+      "source_file": "/home/ales/projects/herdr-strays/docs/show-all.png",
+      "source_location": null,
+      "weight": 1.0
+    }
+  ],
+  "hyperedges": [
+    {
+      "id": "show_all_mode_tui_surface",
+      "label": "Show-All Mode TUI Surface Composition",
+      "nodes": [
+        "docs_show_all_strays_pane_header",
+        "docs_show_all_multi_project_tree",
+        "docs_show_all_diff_pane",
+        "docs_show_all_status_bar",
+        "docs_show_all_cursor_indicator"
+      ],
+      "relation": "form",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "/home/ales/projects/herdr-strays/docs/show-all.png"
+    },
+    {
+      "id": "show_all_example_projects",
+      "label": "Example Projects Rendered in Show-All Mode",
+      "nodes": [
+        "docs_show_all_api_gateway_project",
+        "docs_show_all_notes_project",
+        "docs_show_all_web_app_project"
+      ],
+      "relation": "participate_in",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "/home/ales/projects/herdr-strays/docs/show-all.png"
+    }
+  ],
+  "input_tokens": 52959,
+  "output_tokens": 0
+}

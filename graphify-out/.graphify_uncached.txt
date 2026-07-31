@@ -1,6 +1,0 @@
-/home/ales/projects/herdr-strays/.github/workflows/ci.yml
-/home/ales/projects/herdr-strays/README.md
-/home/ales/projects/herdr-strays/docs/demo.gif
-/home/ales/projects/herdr-strays/docs/help.png
-/home/ales/projects/herdr-strays/docs/screenshot.png
-/home/ales/projects/herdr-strays/docs/show-all.png

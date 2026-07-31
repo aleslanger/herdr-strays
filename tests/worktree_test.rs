@@ -185,8 +185,8 @@ fn diff_of_a_modified_file_shows_both_sides() {
     };
 
     let rendered: Vec<&str> = lines.iter().map(|l| l.text.as_str()).collect();
-    assert!(rendered.iter().any(|l| *l == "-original"));
-    assert!(rendered.iter().any(|l| *l == "+changed"));
+    assert!(rendered.contains(&"-original"));
+    assert!(rendered.contains(&"+changed"));
 }
 
 #[test]
@@ -200,8 +200,8 @@ fn diff_of_an_untracked_file_shows_it_as_all_additions() {
     };
 
     let rendered: Vec<&str> = lines.iter().map(|l| l.text.as_str()).collect();
-    assert!(rendered.iter().any(|l| *l == "+line one"));
-    assert!(rendered.iter().any(|l| *l == "+line two"));
+    assert!(rendered.contains(&"+line one"));
+    assert!(rendered.contains(&"+line two"));
 }
 
 #[test]

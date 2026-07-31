@@ -1,0 +1,605 @@
+{
+  "nodes": [
+    {
+      "id": "docs_screenshot_strays_tui_screenshot",
+      "label": "Strays TUI Screenshot",
+      "file_type": "image",
+      "source_file": "/home/ales/projects/herdr-strays/docs/screenshot.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "docs_screenshot_two_pane_layout",
+      "label": "Two-Pane Terminal Layout",
+      "file_type": "rationale",
+      "source_file": "/home/ales/projects/herdr-strays/docs/screenshot.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "docs_screenshot_project_tree_pane",
+      "label": "Project Tree Pane (strays, 4 in 3 projects)",
+      "file_type": "concept",
+      "source_file": "/home/ales/projects/herdr-strays/docs/screenshot.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "docs_screenshot_diff_preview_pane",
+      "label": "Diff Preview Pane",
+      "file_type": "concept",
+      "source_file": "/home/ales/projects/herdr-strays/docs/screenshot.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "docs_screenshot_stray_change_concept",
+      "label": "Stray Change (uncommitted work) Concept",
+      "file_type": "rationale",
+      "source_file": "/home/ales/projects/herdr-strays/docs/screenshot.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "docs_screenshot_multi_project_aggregation",
+      "label": "Multi-Project Aggregation",
+      "file_type": "rationale",
+      "source_file": "/home/ales/projects/herdr-strays/docs/screenshot.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "docs_screenshot_git_status_markers",
+      "label": "Git Status Markers (M modified, ? untracked)",
+      "file_type": "concept",
+      "source_file": "/home/ales/projects/herdr-strays/docs/screenshot.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "docs_screenshot_branch_and_clean_state_labels",
+      "label": "Branch and Clean-State Labels",
+      "file_type": "concept",
+      "source_file": "/home/ales/projects/herdr-strays/docs/screenshot.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "docs_screenshot_foldable_tree_nodes",
+      "label": "Foldable Tree Nodes",
+      "file_type": "concept",
+      "source_file": "/home/ales/projects/herdr-strays/docs/screenshot.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "docs_screenshot_selection_cursor",
+      "label": "Selection Cursor Gutter Marker",
+      "file_type": "concept",
+      "source_file": "/home/ales/projects/herdr-strays/docs/screenshot.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "docs_screenshot_keybinding_footer",
+      "label": "Keybinding Footer Hint Bar",
+      "file_type": "concept",
+      "source_file": "/home/ales/projects/herdr-strays/docs/screenshot.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "docs_screenshot_action_move",
+      "label": "Action: j/k move",
+      "file_type": "concept",
+      "source_file": "/home/ales/projects/herdr-strays/docs/screenshot.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "docs_screenshot_action_fold",
+      "label": "Action: fold",
+      "file_type": "concept",
+      "source_file": "/home/ales/projects/herdr-strays/docs/screenshot.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "docs_screenshot_action_edit",
+      "label": "Action: e edit",
+      "file_type": "concept",
+      "source_file": "/home/ales/projects/herdr-strays/docs/screenshot.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "docs_screenshot_action_claude",
+      "label": "Action: c claude (agent hand-off)",
+      "file_type": "concept",
+      "source_file": "/home/ales/projects/herdr-strays/docs/screenshot.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "docs_screenshot_action_strays_filter",
+      "label": "Action: a strays (toggle strays-only view)",
+      "file_type": "concept",
+      "source_file": "/home/ales/projects/herdr-strays/docs/screenshot.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "docs_screenshot_action_all_workspaces",
+      "label": "Action: w all ws (all workspaces)",
+      "file_type": "concept",
+      "source_file": "/home/ales/projects/herdr-strays/docs/screenshot.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "docs_screenshot_action_keys_help",
+      "label": "Action: ? keys (help overlay)",
+      "file_type": "concept",
+      "source_file": "/home/ales/projects/herdr-strays/docs/screenshot.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "docs_screenshot_unified_diff_rendering",
+      "label": "Unified Diff Rendering with +/- Coloring",
+      "file_type": "concept",
+      "source_file": "/home/ales/projects/herdr-strays/docs/screenshot.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "docs_screenshot_example_api_gateway_project",
+      "label": "Example Project: api-gateway (feature/token-expiry)",
+      "file_type": "concept",
+      "source_file": "/home/ales/projects/herdr-strays/docs/screenshot.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "docs_screenshot_example_auth_rs_diff",
+      "label": "Example Diff: src/routes/auth.rs token expiry verify()",
+      "file_type": "concept",
+      "source_file": "/home/ales/projects/herdr-strays/docs/screenshot.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "docs_screenshot_vim_style_keybindings",
+      "label": "Vim-Style Single-Key Bindings",
+      "file_type": "rationale",
+      "source_file": "/home/ales/projects/herdr-strays/docs/screenshot.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    }
+  ],
+  "edges": [
+    {
+      "source": "docs_screenshot_strays_tui_screenshot",
+      "target": "docs_screenshot_two_pane_layout",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "/home/ales/projects/herdr-strays/docs/screenshot.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "docs_screenshot_two_pane_layout",
+      "target": "docs_screenshot_project_tree_pane",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "/home/ales/projects/herdr-strays/docs/screenshot.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "docs_screenshot_two_pane_layout",
+      "target": "docs_screenshot_diff_preview_pane",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "/home/ales/projects/herdr-strays/docs/screenshot.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "docs_screenshot_project_tree_pane",
+      "target": "docs_screenshot_git_status_markers",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "/home/ales/projects/herdr-strays/docs/screenshot.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "docs_screenshot_project_tree_pane",
+      "target": "docs_screenshot_branch_and_clean_state_labels",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "/home/ales/projects/herdr-strays/docs/screenshot.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "docs_screenshot_project_tree_pane",
+      "target": "docs_screenshot_foldable_tree_nodes",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "/home/ales/projects/herdr-strays/docs/screenshot.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "docs_screenshot_project_tree_pane",
+      "target": "docs_screenshot_selection_cursor",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "/home/ales/projects/herdr-strays/docs/screenshot.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "docs_screenshot_project_tree_pane",
+      "target": "docs_screenshot_multi_project_aggregation",
+      "relation": "implements",
+      "confidence": "INFERRED",
+      "confidence_score": 0.95,
+      "source_file": "/home/ales/projects/herdr-strays/docs/screenshot.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "docs_screenshot_git_status_markers",
+      "target": "docs_screenshot_stray_change_concept",
+      "relation": "implements",
+      "confidence": "INFERRED",
+      "confidence_score": 0.85,
+      "source_file": "/home/ales/projects/herdr-strays/docs/screenshot.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "docs_screenshot_selection_cursor",
+      "target": "docs_screenshot_diff_preview_pane",
+      "relation": "shares_data_with",
+      "confidence": "INFERRED",
+      "confidence_score": 0.85,
+      "source_file": "/home/ales/projects/herdr-strays/docs/screenshot.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "docs_screenshot_diff_preview_pane",
+      "target": "docs_screenshot_unified_diff_rendering",
+      "relation": "implements",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "/home/ales/projects/herdr-strays/docs/screenshot.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "docs_screenshot_diff_preview_pane",
+      "target": "docs_screenshot_example_auth_rs_diff",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "/home/ales/projects/herdr-strays/docs/screenshot.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "docs_screenshot_example_api_gateway_project",
+      "target": "docs_screenshot_example_auth_rs_diff",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "/home/ales/projects/herdr-strays/docs/screenshot.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "docs_screenshot_example_api_gateway_project",
+      "target": "docs_screenshot_project_tree_pane",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "/home/ales/projects/herdr-strays/docs/screenshot.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "docs_screenshot_keybinding_footer",
+      "target": "docs_screenshot_action_move",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "/home/ales/projects/herdr-strays/docs/screenshot.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "docs_screenshot_keybinding_footer",
+      "target": "docs_screenshot_action_fold",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "/home/ales/projects/herdr-strays/docs/screenshot.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "docs_screenshot_keybinding_footer",
+      "target": "docs_screenshot_action_edit",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "/home/ales/projects/herdr-strays/docs/screenshot.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "docs_screenshot_keybinding_footer",
+      "target": "docs_screenshot_action_claude",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "/home/ales/projects/herdr-strays/docs/screenshot.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "docs_screenshot_keybinding_footer",
+      "target": "docs_screenshot_action_strays_filter",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "/home/ales/projects/herdr-strays/docs/screenshot.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "docs_screenshot_keybinding_footer",
+      "target": "docs_screenshot_action_all_workspaces",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "/home/ales/projects/herdr-strays/docs/screenshot.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "docs_screenshot_keybinding_footer",
+      "target": "docs_screenshot_action_keys_help",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "/home/ales/projects/herdr-strays/docs/screenshot.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "docs_screenshot_vim_style_keybindings",
+      "target": "docs_screenshot_keybinding_footer",
+      "relation": "rationale_for",
+      "confidence": "INFERRED",
+      "confidence_score": 0.85,
+      "source_file": "/home/ales/projects/herdr-strays/docs/screenshot.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "docs_screenshot_action_move",
+      "target": "docs_screenshot_vim_style_keybindings",
+      "relation": "implements",
+      "confidence": "INFERRED",
+      "confidence_score": 0.95,
+      "source_file": "/home/ales/projects/herdr-strays/docs/screenshot.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "docs_screenshot_action_fold",
+      "target": "docs_screenshot_foldable_tree_nodes",
+      "relation": "references",
+      "confidence": "INFERRED",
+      "confidence_score": 0.95,
+      "source_file": "/home/ales/projects/herdr-strays/docs/screenshot.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "docs_screenshot_action_strays_filter",
+      "target": "docs_screenshot_stray_change_concept",
+      "relation": "references",
+      "confidence": "INFERRED",
+      "confidence_score": 0.85,
+      "source_file": "/home/ales/projects/herdr-strays/docs/screenshot.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "docs_screenshot_action_all_workspaces",
+      "target": "docs_screenshot_multi_project_aggregation",
+      "relation": "references",
+      "confidence": "INFERRED",
+      "confidence_score": 0.85,
+      "source_file": "/home/ales/projects/herdr-strays/docs/screenshot.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "docs_screenshot_action_claude",
+      "target": "docs_screenshot_action_edit",
+      "relation": "semantically_similar_to",
+      "confidence": "INFERRED",
+      "confidence_score": 0.7,
+      "source_file": "/home/ales/projects/herdr-strays/docs/screenshot.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "docs_screenshot_action_strays_filter",
+      "target": "docs_screenshot_action_all_workspaces",
+      "relation": "semantically_similar_to",
+      "confidence": "INFERRED",
+      "confidence_score": 0.75,
+      "source_file": "/home/ales/projects/herdr-strays/docs/screenshot.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "docs_screenshot_branch_and_clean_state_labels",
+      "target": "docs_screenshot_stray_change_concept",
+      "relation": "conceptually_related_to",
+      "confidence": "INFERRED",
+      "confidence_score": 0.75,
+      "source_file": "/home/ales/projects/herdr-strays/docs/screenshot.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "docs_screenshot_example_auth_rs_diff",
+      "target": "docs_screenshot_stray_change_concept",
+      "relation": "references",
+      "confidence": "INFERRED",
+      "confidence_score": 0.85,
+      "source_file": "/home/ales/projects/herdr-strays/docs/screenshot.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "docs_screenshot_strays_tui_screenshot",
+      "target": "docs_screenshot_keybinding_footer",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "/home/ales/projects/herdr-strays/docs/screenshot.png",
+      "source_location": null,
+      "weight": 1.0
+    }
+  ],
+  "hyperedges": [
+    {
+      "id": "browse_select_preview_flow",
+      "label": "Browse-Select-Preview Flow (tree cursor drives diff pane)",
+      "nodes": [
+        "docs_screenshot_project_tree_pane",
+        "docs_screenshot_selection_cursor",
+        "docs_screenshot_diff_preview_pane",
+        "docs_screenshot_action_move"
+      ],
+      "relation": "participate_in",
+      "confidence": "INFERRED",
+      "confidence_score": 0.85,
+      "source_file": "/home/ales/projects/herdr-strays/docs/screenshot.png"
+    },
+    {
+      "id": "stray_triage_actions",
+      "label": "Stray Triage Action Set (edit, hand off to agent, filter scope)",
+      "nodes": [
+        "docs_screenshot_action_edit",
+        "docs_screenshot_action_claude",
+        "docs_screenshot_action_strays_filter",
+        "docs_screenshot_action_all_workspaces",
+        "docs_screenshot_stray_change_concept"
+      ],
+      "relation": "participate_in",
+      "confidence": "INFERRED",
+      "confidence_score": 0.75,
+      "source_file": "/home/ales/projects/herdr-strays/docs/screenshot.png"
+    },
+    {
+      "id": "repo_state_visual_language",
+      "label": "Repository State Visual Language (markers, branch labels, counts)",
+      "nodes": [
+        "docs_screenshot_git_status_markers",
+        "docs_screenshot_branch_and_clean_state_labels",
+        "docs_screenshot_multi_project_aggregation",
+        "docs_screenshot_foldable_tree_nodes"
+      ],
+      "relation": "form",
+      "confidence": "INFERRED",
+      "confidence_score": 0.75,
+      "source_file": "/home/ales/projects/herdr-strays/docs/screenshot.png"
+    }
+  ],
+  "input_tokens": 53209,
+  "output_tokens": 0
+}
