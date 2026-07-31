@@ -94,6 +94,34 @@ Press `?` in the pane for this list at any time.
 
 ## Install
 
+**Before you start**, you need herdr 0.7.0+, `git` on `PATH`, and a Rust
+toolchain — `herdr plugin install` compiles the plugin from source. Without
+`cargo` the install fails with `failed to start: No such file or directory`.
+
+If `cargo --version` prints nothing, install Rust:
+
+```sh
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+```
+
+Then open a new shell, or add it to the current one:
+
+```sh
+. "$HOME/.cargo/env"
+```
+
+herdr runs the build itself, so `cargo` has to be on the `PATH` of the herdr
+server, which inherits it from whatever shell started it — not from the one you
+are typing in. A server that was already running when you installed Rust will
+not see it. Restart it from a shell that can find `cargo`:
+
+```sh
+herdr server stop
+herdr server
+```
+
+With that in place:
+
 ```sh
 herdr plugin install aleslanger/herdr-strays
 ```
@@ -117,9 +145,6 @@ herdr server reload-config
 Pressing the key again focuses the pane rather than opening a second one; press
 it while the pane is focused to dismiss it.
 
-**Requires** herdr 0.7.0+, `git` on `PATH`, and a Rust toolchain for the
-install-time build.
-
 ### From a checkout
 
 `plugin link` skips the build step, so build first:
@@ -130,6 +155,14 @@ cd herdr-strays
 cargo build --release
 herdr plugin link "$PWD"
 ```
+
+### About the toolchain
+
+`rust-toolchain.toml` pins the version this is built and linted with, so
+rustup fetches that exact toolchain on the first `cargo` call and CI and your
+machine agree. A `cargo` installed from a distribution package rather than
+rustup ignores the pin and builds with whatever version it is; that works as
+far back as the `rust-version` in `Cargo.toml`.
 
 
 ## License
