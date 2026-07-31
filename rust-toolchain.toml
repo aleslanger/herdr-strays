@@ -1,0 +1,8 @@
+# Pinned so a new clippy release cannot fail CI on lints that were never run
+# locally. Bump deliberately, then fix whatever the newer lints report.
+#
+# This is the toolchain the code is built and linted with; `rust-version` in
+# Cargo.toml is the older minimum the crate still compiles against.
+[toolchain]
+channel = "1.97.1"
+components = ["rustfmt", "clippy"]

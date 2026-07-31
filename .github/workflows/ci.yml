@@ -21,9 +21,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: dtolnay/rust-toolchain@stable
-        with:
-          components: rustfmt, clippy
+      # rust-toolchain.toml is the single source of truth for the version, and
+      # the preinstalled rustup honours it on the first cargo call. Naming a
+      # version here as well would let the two drift apart.
+      - name: Install the pinned toolchain
+        run: rustup show active-toolchain || rustup toolchain install
 
       - uses: Swatinem/rust-cache@v2
 

@@ -1,0 +1,132 @@
+{
+  ".claude/settings.local.json": {
+    "mtime": 1785435640.0684214,
+    "ast_hash": "a17c3e5625935b361e56180614023f83",
+    "semantic_hash": "a17c3e5625935b361e56180614023f83"
+  },
+  "scripts/open.sh": {
+    "mtime": 1785441241.9203439,
+    "ast_hash": "437973c56be277b1b45c6bc4fff6e93e",
+    "semantic_hash": "437973c56be277b1b45c6bc4fff6e93e"
+  },
+  "src/agent.rs": {
+    "mtime": 1785473277.4588385,
+    "ast_hash": "e281b74a5ea88e04caf1a1f0793d07a7",
+    "semantic_hash": "e281b74a5ea88e04caf1a1f0793d07a7"
+  },
+  "src/app/mod.rs": {
+    "mtime": 1785473277.4588385,
+    "ast_hash": "4a3c067fee5365517d36cca12bd7b106",
+    "semantic_hash": "4a3c067fee5365517d36cca12bd7b106"
+  },
+  "src/app/prompt.rs": {
+    "mtime": 1785473277.4588385,
+    "ast_hash": "127d497dee824a7ec7cd5aae4c8a72cd",
+    "semantic_hash": "127d497dee824a7ec7cd5aae4c8a72cd"
+  },
+  "src/app/scroll.rs": {
+    "mtime": 1785473277.4588385,
+    "ast_hash": "97f8f610b9c75e12f5c3664abf2ccdee",
+    "semantic_hash": "97f8f610b9c75e12f5c3664abf2ccdee"
+  },
+  "src/discover.rs": {
+    "mtime": 1785473330.5618,
+    "ast_hash": "9f50bd040839df758a56c27f270313d5",
+    "semantic_hash": "9f50bd040839df758a56c27f270313d5"
+  },
+  "src/editor.rs": {
+    "mtime": 1785473277.4588385,
+    "ast_hash": "371f6bba4ecd0b685b704e48eab6398e",
+    "semantic_hash": "371f6bba4ecd0b685b704e48eab6398e"
+  },
+  "src/git.rs": {
+    "mtime": 1785473277.4588385,
+    "ast_hash": "3310d11c3907b718c7b9031a61cf7cda",
+    "semantic_hash": "3310d11c3907b718c7b9031a61cf7cda"
+  },
+  "src/git/diff.rs": {
+    "mtime": 1785473277.4588385,
+    "ast_hash": "016dac72bd18bad3b07bc3acff11ec87",
+    "semantic_hash": "016dac72bd18bad3b07bc3acff11ec87"
+  },
+  "src/git/run.rs": {
+    "mtime": 1785473277.4588385,
+    "ast_hash": "38b0927e6cd6d1ee7024bf706c5bbebc",
+    "semantic_hash": "38b0927e6cd6d1ee7024bf706c5bbebc"
+  },
+  "src/git/status.rs": {
+    "mtime": 1785473344.4775252,
+    "ast_hash": "a2a5ad7b21cf47055aacd8f651ca341a",
+    "semantic_hash": "a2a5ad7b21cf47055aacd8f651ca341a"
+  },
+  "src/lib.rs": {
+    "mtime": 1785473277.4588385,
+    "ast_hash": "8152dd65a817bf731f5f7d07a4dbff04",
+    "semantic_hash": "8152dd65a817bf731f5f7d07a4dbff04"
+  },
+  "src/main.rs": {
+    "mtime": 1785473277.4588385,
+    "ast_hash": "0e68c0ec121a108dbf3737e0d3314a63",
+    "semantic_hash": "0e68c0ec121a108dbf3737e0d3314a63"
+  },
+  "src/model.rs": {
+    "mtime": 1785473277.4588385,
+    "ast_hash": "9ceb85bc0cc20ae286dbe1a0d76c1369",
+    "semantic_hash": "9ceb85bc0cc20ae286dbe1a0d76c1369"
+  },
+  "src/tree.rs": {
+    "mtime": 1785473277.4588385,
+    "ast_hash": "4ddad8dc9dec03125d5c5797e69c4e79",
+    "semantic_hash": "4ddad8dc9dec03125d5c5797e69c4e79"
+  },
+  "src/ui.rs": {
+    "mtime": 1785473277.4588385,
+    "ast_hash": "4def0c2087c08d6206abe7a4083acbc8",
+    "semantic_hash": "4def0c2087c08d6206abe7a4083acbc8"
+  },
+  "src/watch.rs": {
+    "mtime": 1785473277.4588385,
+    "ast_hash": "d5f9dfb747c3ee587aea2a3d61cddba4",
+    "semantic_hash": "d5f9dfb747c3ee587aea2a3d61cddba4"
+  },
+  "src/worktree.rs": {
+    "mtime": 1785473277.4588385,
+    "ast_hash": "c2a1d7ace6e7dec2d597acca1d921815",
+    "semantic_hash": "c2a1d7ace6e7dec2d597acca1d921815"
+  },
+  "tests/worktree_test.rs": {
+    "mtime": 1785473717.2674615,
+    "ast_hash": "074f8af1cc05f3ff1f92b2026afba9da",
+    "semantic_hash": "074f8af1cc05f3ff1f92b2026afba9da"
+  },
+  ".github/workflows/ci.yml": {
+    "mtime": 1785473355.421317,
+    "ast_hash": "1de0ff8a50780521bdc9f9f389e2b59b",
+    "semantic_hash": "1de0ff8a50780521bdc9f9f389e2b59b"
+  },
+  "README.md": {
+    "mtime": 1785437101.351818,
+    "ast_hash": "ac9deb5193daa23ca6ddd231b1f8bdb9",
+    "semantic_hash": "ac9deb5193daa23ca6ddd231b1f8bdb9"
+  },
+  "docs/demo.gif": {
+    "mtime": 1785436335.914568,
+    "ast_hash": "48031cff0d85cd9223f32c63a3721269",
+    "semantic_hash": "48031cff0d85cd9223f32c63a3721269"
+  },
+  "docs/help.png": {
+    "mtime": 1785436332.6705976,
+    "ast_hash": "c0da88633a2910275f9c89a7642aa451",
+    "semantic_hash": "c0da88633a2910275f9c89a7642aa451"
+  },
+  "docs/screenshot.png": {
+    "mtime": 1785436332.6665976,
+    "ast_hash": "5c449d62c7357f0a82c6932543d22022",
+    "semantic_hash": "5c449d62c7357f0a82c6932543d22022"
+  },
+  "docs/show-all.png": {
+    "mtime": 1785436332.6745977,
+    "ast_hash": "c416347faeff02c63796601cb955468e",
+    "semantic_hash": "c416347faeff02c63796601cb955468e"
+  }
+}
