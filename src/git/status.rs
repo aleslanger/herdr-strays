@@ -159,13 +159,9 @@ fn field_after(record: &[u8], n: usize) -> Option<&[u8]> {
     let mut idx = 0;
 
     while seen < n {
-        match record[idx..].iter().position(|b| *b == b' ') {
-            Some(rel) => {
-                idx += rel + 1;
-                seen += 1;
-            }
-            None => return None,
-        }
+        let rel = record[idx..].iter().position(|b| *b == b' ')?;
+        idx += rel + 1;
+        seen += 1;
         if idx >= record.len() {
             return None;
         }
@@ -288,7 +284,7 @@ mod tests {
     fn find<'a>(strays: &'a [Stray], path: &str) -> &'a Stray {
         strays
             .iter()
-            .find(|s| s.path == PathBuf::from(path))
+            .find(|s| s.path == Path::new(path))
             .unwrap_or_else(|| panic!("{path} missing from {strays:?}"))
     }
 
@@ -316,7 +312,7 @@ mod tests {
         // If the trailing `ren.txt` field leaked, it would appear as its own
         // entry and the count would be wrong.
         assert!(
-            !strays.iter().any(|s| s.path == PathBuf::from("ren.txt")),
+            !strays.iter().any(|s| s.path == Path::new("ren.txt")),
             "the rename source must not become its own stray"
         );
     }
@@ -330,9 +326,7 @@ mod tests {
     #[test]
     fn ignored_files_never_appear() {
         let strays = parse_status(REAL_OUTPUT);
-        assert!(!strays
-            .iter()
-            .any(|s| s.path == PathBuf::from("ignored.log")));
+        assert!(!strays.iter().any(|s| s.path == Path::new("ignored.log")));
     }
 
     #[test]

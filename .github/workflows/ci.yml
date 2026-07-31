@@ -45,6 +45,11 @@ jobs:
 
   audit:
     runs-on: ubuntu-latest
+    # audit-check publishes its findings as a check run, which the default
+    # read-only token cannot create.
+    permissions:
+      contents: read
+      checks: write
     steps:
       - uses: actions/checkout@v4
       # Fails on vulnerabilities; unmaintained and unsound advisories are

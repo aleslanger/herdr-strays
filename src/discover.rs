@@ -289,6 +289,7 @@ fn read_value(rest: &str) -> Option<String> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::path::Path;
 
     /// Verbatim `herdr pane list` output, captured from a running herdr 0.7.3
     /// with three workspaces open. Trimmed to the fields this module reads.
@@ -334,7 +335,7 @@ mod tests {
         let panes = parse_pane_cwds(PANE_LIST);
         let api: Vec<_> = panes
             .iter()
-            .filter(|p| p.cwd == PathBuf::from("/repo/api"))
+            .filter(|p| p.cwd == Path::new("/repo/api"))
             .collect();
         assert_eq!(api.len(), 2, "fixture should have two panes in one repo");
     }
