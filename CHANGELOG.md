@@ -4,6 +4,16 @@ Notable changes to strays. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the versions
 follow [semantic versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.2] - 2026-08-09
+
+### Fixed
+
+- Text files are checked out with LF on every platform, which is what a
+  `.gitattributes` now asks for. 1.0.1 normalised the line endings inside the
+  tests that read a file from the repository; this removes the reason they had
+  to. It matters beyond the tests: `sh` refuses a script whose shebang line
+  ends in CR, so a CRLF copy of `install.sh` is not untidy but unrunnable.
+
 ## [1.0.1] - 2026-08-09
 
 ### Fixed
@@ -157,7 +167,8 @@ First release.
 - A key reference, a show-all-tracked-files view, and auto-folding for
   oversized directories.
 
-[Unreleased]: https://github.com/aleslanger/herdr-strays/compare/v1.0.1...HEAD
+[Unreleased]: https://github.com/aleslanger/herdr-strays/compare/v1.0.2...HEAD
+[1.0.2]: https://github.com/aleslanger/herdr-strays/releases/tag/v1.0.2
 [1.0.1]: https://github.com/aleslanger/herdr-strays/releases/tag/v1.0.1
 [1.0.0]: https://github.com/aleslanger/herdr-strays/releases/tag/v1.0.0
 [0.1.0]: https://github.com/aleslanger/herdr-strays/releases/tag/0.0.4

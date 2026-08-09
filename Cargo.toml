@@ -1,6 +1,6 @@
 [package]
 name = "herdr-strays"
-version = "1.0.1"
+version = "1.0.2"
 edition = "2021"
 # The floor for the source-build fallback in scripts/install.sh. Most installs
 # now download a release built by CI, so this no longer has to cover whatever
