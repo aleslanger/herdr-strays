@@ -485,6 +485,17 @@ mod tests {
         assert!(error.contains('x'), "{error}");
     }
 
+    /// The README with its line endings normalised.
+    ///
+    /// `include_str!` hands back the file as it sits on disk, and a Windows
+    /// checkout converts it to CRLF. Both readers below split on `\n\n`, which
+    /// a CRLF file does not contain, and the TOML parser rejects the stray `\r`
+    /// outright — so the tests failed on Windows over a checkout setting rather
+    /// than anything in the README or the config.
+    fn readme() -> String {
+        include_str!("../../README.md").replace("\r\n", "\n")
+    }
+
     /// The sample config in the README, as written there.
     ///
     /// Cut from the file rather than copied into the test, because a copy is
@@ -492,7 +503,7 @@ mod tests {
     /// renamed key turns the documented example into a file that will not load,
     /// and the reader would find that out before we did.
     fn readme_sample() -> String {
-        let readme = include_str!("../../README.md");
+        let readme = readme();
         let after = readme
             .split_once("[thresholds]")
             .expect("the README documents a config file")
@@ -525,7 +536,7 @@ mod tests {
         // The list is what a reader copies from when writing `[keys]`. A name
         // that no longer parses would be an error message pointing at their
         // file for a mistake that is ours.
-        let readme = include_str!("../../README.md");
+        let readme = readme();
         let listed: Vec<&str> = readme
             .split_once("Action names, for the right-hand side:")
             .expect("the README lists the action names")

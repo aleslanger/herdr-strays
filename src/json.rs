@@ -794,7 +794,12 @@ mod tests {
     fn a_path_with_a_quote_survives_the_round_trip() {
         // The reason this module uses serde rather than building the string by
         // hand: a filename may contain anything the filesystem allows.
-        let awkward = r#"src/we"ird\path.rs"#;
+        //
+        // A quote and no backslash: the quote is what has to survive JSON
+        // encoding, while a backslash is a path separator on Windows, and
+        // `PathBuf` rewrites it there — the round trip would then be compared
+        // against a string the path never held.
+        let awkward = r#"src/we"ird/path.rs"#;
         let projects = vec![scanned(vec![Stray::new(StrayStatus::Modified, awkward)])];
         let base = Base::Head;
         let forge = unasked();
