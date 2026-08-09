@@ -1,0 +1,15 @@
+# Check every text file out with LF, on every platform.
+#
+# Without this a Windows checkout converts to CRLF, and the tests that read a
+# file from the repository — the README sample config, the action list, the
+# shebang on install.sh — compare against strings written with `\n` and fail
+# over a checkout setting rather than over anything they are testing.
+#
+# install.sh matters beyond the tests: `sh` refuses a script whose shebang line
+# ends in CR, so a CRLF copy is not merely untidy but unrunnable.
+* text=auto eol=lf
+
+# Recordings and stills are binary; normalising them would corrupt them.
+*.gif binary
+*.mp4 binary
+*.png binary

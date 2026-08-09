@@ -90,8 +90,12 @@ fn the_install_script_is_posix_sh() {
     let text = std::fs::read_to_string(repo_root().join("scripts/install.sh"))
         .expect("install.sh is readable");
 
-    assert!(
-        text.starts_with("#!/bin/sh\n"),
+    // Compared line by line rather than against "#!/bin/sh\n": .gitattributes
+    // asks for LF everywhere, but a checkout made before it existed still has
+    // CRLF, and the shebang would then be read as "#!/bin/sh\r" and miss.
+    assert_eq!(
+        text.lines().next(),
+        Some("#!/bin/sh"),
         "install.sh must declare POSIX sh"
     );
 }
