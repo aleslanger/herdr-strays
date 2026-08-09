@@ -12,6 +12,53 @@
 use std::path::Path;
 use std::process::Command;
 
+/// What an agent is doing right now.
+///
+/// Only the two states herdr is known to report are modelled — `working` and
+/// `idle`, both verified against a running herdr 0.7.3. Anything else herdr
+/// grows later arrives as [`AgentStatus::Unknown`] carrying the raw string,
+/// which shows the user what herdr said rather than guessing at it or dropping
+/// the agent.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum AgentStatus {
+    /// Busy on a turn.
+    Working,
+    /// Waiting for input.
+    Idle,
+    /// A state this version does not model, kept verbatim.
+    Unknown(String),
+}
+
+impl AgentStatus {
+    /// Read herdr's `agent_status` field.
+    pub fn parse(raw: &str) -> Self {
+        match raw {
+            "working" => AgentStatus::Working,
+            "idle" => AgentStatus::Idle,
+            other => AgentStatus::Unknown(other.to_string()),
+        }
+    }
+
+    /// A filled circle while busy, hollow while waiting.
+    pub fn glyph(&self) -> char {
+        match self {
+            AgentStatus::Working => '●',
+            AgentStatus::Idle => '○',
+            // Neither claim, so neither glyph.
+            AgentStatus::Unknown(_) => '·',
+        }
+    }
+
+    /// Short label for the status line.
+    pub fn label(&self) -> &str {
+        match self {
+            AgentStatus::Working => "working",
+            AgentStatus::Idle => "idle",
+            AgentStatus::Unknown(raw) => raw,
+        }
+    }
+}
+
 /// A Claude agent herdr has running.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Agent {
@@ -19,6 +66,8 @@ pub struct Agent {
     pub workspace_id: String,
     /// The agent's working directory, used to match it to a repository.
     pub cwd: String,
+    /// What herdr says the agent is doing.
+    pub status: AgentStatus,
 }
 
 #[derive(Debug)]
@@ -131,6 +180,11 @@ pub fn parse_agents(json: &str) -> Vec<Agent> {
                 workspace_id: crate::discover::string_field(record, "workspace_id")
                     .unwrap_or_default(),
                 cwd: crate::discover::string_field(record, "cwd").unwrap_or_default(),
+                // A missing status is unknown rather than idle: claiming an
+                // agent is waiting when herdr did not say so would be a guess.
+                status: crate::discover::string_field(record, "agent_status")
+                    .map(|s| AgentStatus::parse(&s))
+                    .unwrap_or_else(|| AgentStatus::Unknown(String::new())),
             })
         })
         .collect()
@@ -192,6 +246,7 @@ mod tests {
             pane_id: "w1:p1".into(),
             workspace_id: "w1".into(),
             cwd: "/repo/app/src".into(),
+            status: AgentStatus::Idle,
         }];
         assert!(pick(&agents, Path::new("/repo/app")).is_some());
     }
@@ -203,6 +258,7 @@ mod tests {
             pane_id: "w1:p1".into(),
             workspace_id: "w1".into(),
             cwd: "/repo/app-other".into(),
+            status: AgentStatus::Idle,
         }];
         assert!(pick(&agents, Path::new("/repo/app")).is_none());
     }
@@ -291,6 +347,52 @@ mod tests {
 {"agent_status":"unknown","cwd":"/repo","pane_id":"w1:p9","workspace_id":"w1"}
 ],"type":"agent_list"}}"#;
         assert!(parse_agents(json).is_empty());
+    }
+
+    #[test]
+    fn the_two_states_herdr_reports_are_recognised() {
+        // Both verified against a running herdr 0.7.3: `working` was captured
+        // live from an agent mid-turn, `idle` from the fixture above.
+        assert_eq!(AgentStatus::parse("working"), AgentStatus::Working);
+        assert_eq!(AgentStatus::parse("idle"), AgentStatus::Idle);
+    }
+
+    #[test]
+    fn an_unmodelled_state_is_kept_verbatim_rather_than_guessed_at() {
+        // A future herdr may report something new. Showing what it said beats
+        // flattening it to "idle", which would claim the agent is waiting.
+        assert_eq!(
+            AgentStatus::parse("compacting"),
+            AgentStatus::Unknown("compacting".into())
+        );
+        assert_eq!(AgentStatus::parse("compacting").label(), "compacting");
+    }
+
+    #[test]
+    fn a_working_agent_is_marked_differently_from_a_waiting_one() {
+        assert_ne!(
+            AgentStatus::Working.glyph(),
+            AgentStatus::Idle.glyph(),
+            "the point of the marker is telling these two apart"
+        );
+    }
+
+    #[test]
+    fn the_status_of_a_running_agent_is_read_from_the_list() {
+        let agents = parse_agents(AGENT_LIST);
+        assert_eq!(agents[0].status, AgentStatus::Idle);
+    }
+
+    #[test]
+    fn a_record_with_no_status_field_is_unknown_not_idle() {
+        // Claiming an agent is waiting when herdr never said so would be a
+        // guess, and the whole point of the column is knowing which is live.
+        let json = r#"{"id":"x","result":{"agents":[
+{"agent":"claude","cwd":"/repo","pane_id":"w1:p1","workspace_id":"w1"}
+],"type":"agent_list"}}"#;
+        let agents = parse_agents(json);
+        assert_eq!(agents.len(), 1);
+        assert!(matches!(agents[0].status, AgentStatus::Unknown(_)));
     }
 
     #[test]

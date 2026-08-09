@@ -14,7 +14,7 @@
 use std::path::Path;
 
 use super::run::{run_git, GitError};
-use crate::model::{Stray, StrayStatus};
+use crate::model::{Stray, StrayStatus, Upstream};
 
 /// List every file that strayed from HEAD: staged, unstaged and untracked.
 ///
@@ -30,6 +30,100 @@ pub fn list_strays(repo: &Path) -> Result<Vec<Stray>, GitError> {
         ["status", "--porcelain=v2", "-z", "--untracked-files=all"],
     )?;
     Ok(parse_status(&out))
+}
+
+/// List every file that differs from `base`, committed or not.
+///
+/// `git status` cannot answer this. It compares the worktree against the index
+/// and `HEAD` and knows nothing of any other revision, so a file changed
+/// earlier on the branch and clean in the worktree would simply be absent — a
+/// list that is wrong rather than short.
+///
+/// So the file list comes from `git diff --name-status` against the base, and
+/// `status` is merged over it for what only `status` knows: which files are
+/// untracked, and which are unmerged. A file in both takes the status entry,
+/// because "untracked" and "conflicted" say more than "modified" does.
+pub fn list_strays_against(repo: &Path, base: &super::base::Base) -> Result<Vec<Stray>, GitError> {
+    // The ordinary view has always been `status`, and it reports things a diff
+    // cannot — submodule state among them. Nothing to gain by rebuilding it.
+    if base.is_head() {
+        return list_strays(repo);
+    }
+
+    let out = run_git(repo, ["diff", "--name-status", "-z", base.rev(), "--"])?;
+    let committed = parse_name_status(&out);
+
+    // What only `status` knows. An untracked file is in no commit, so the diff
+    // above cannot mention it; a conflict is a worktree state, not a range.
+    let working = list_strays(repo)?;
+
+    // Set rather than a scan per file: a branch that has moved a long way can
+    // list thousands of files on both sides, and pairing them off would be
+    // quadratic in exactly the case that already has the most to read.
+    let claimed: std::collections::HashSet<&std::path::Path> =
+        working.iter().map(|w| w.path.as_path()).collect();
+
+    let mut merged: Vec<Stray> = committed
+        .into_iter()
+        .filter(|c| !claimed.contains(c.path.as_path()))
+        .collect();
+    merged.extend(working);
+    merged.sort_by(|a, b| a.path.cmp(&b.path));
+    merged.dedup_by(|a, b| a.path == b.path);
+    Ok(merged)
+}
+
+/// Split a NUL-separated `diff --name-status -z` buffer into strays.
+///
+/// Records alternate status and path — `M\0path\0` — except renames and copies,
+/// which carry a similarity score and *two* paths: `R100\0old\0new\0`. That
+/// second path is why this walks records rather than chunking them in pairs.
+pub fn parse_name_status(buf: &[u8]) -> Vec<Stray> {
+    let fields: Vec<&[u8]> = NulRecords::new(buf)
+        .collect_all()
+        .into_iter()
+        .filter(|r| !r.is_empty())
+        .collect();
+
+    let mut strays = Vec::new();
+    let mut at = 0;
+
+    while at < fields.len() {
+        let code = fields[at];
+        let Some(letter) = code.first().copied() else {
+            at += 1;
+            continue;
+        };
+
+        // A rename or copy names where it came from as well as where it is now.
+        let takes_two = matches!(letter, b'R' | b'C');
+        let wanted = if takes_two { 2 } else { 1 };
+        if at + wanted >= fields.len() {
+            break;
+        }
+
+        let status = match letter {
+            b'A' => StrayStatus::Added,
+            b'D' => StrayStatus::Deleted,
+            b'R' => StrayStatus::Renamed {
+                from: lossy_path(fields[at + 1]),
+            },
+            // A copy has no `from` in this model, and calling it modified is
+            // the honest reading: the file is there and differs from the base.
+            b'C' => StrayStatus::Modified,
+            // `M`, `T` (type change), and anything a future git adds. A type
+            // change is a real difference, so it belongs in the list.
+            _ => StrayStatus::Modified,
+        };
+
+        // For a rename the *new* path is what exists on disk to be opened.
+        let path = lossy_path(fields[at + wanted]);
+        strays.push(Stray::new(status, path));
+        at += wanted + 1;
+    }
+
+    strays.sort_by(|a, b| a.path.cmp(&b.path));
+    strays
 }
 
 /// Split a NUL-separated porcelain v2 buffer into strays.
@@ -62,9 +156,12 @@ pub fn parse_status(buf: &[u8]) -> Vec<Stray> {
             }
             b'u' => {
                 if let Some(path) = field_after(record, 10) {
+                    // Every `u` record is an unmerged path, whatever the two
+                    // sides did to it — the `<XY>` code says which, and a
+                    // viewer only needs to say that work has stopped here.
                     let status = match field(record, 2) {
                         Some(sub) if is_submodule(sub) => StrayStatus::Submodule,
-                        _ => StrayStatus::Modified,
+                        _ => StrayStatus::Conflicted,
                     };
                     strays.push(Stray::new(status, lossy_path(path)));
                 }
@@ -243,6 +340,33 @@ pub fn branch_of(repo: &Path) -> Option<String> {
     }
 }
 
+/// How far this worktree's branch is from the remote branch it tracks.
+///
+/// `None` when there is no upstream at all — a local-only branch, a detached
+/// HEAD, or a repository with no remote. That is a different answer from "in
+/// sync", and conflating the two would tell the user they had pushed when
+/// there is nowhere to push to.
+///
+/// `@{u}` resolves the configured upstream, so this asks about the branch the
+/// user actually tracks rather than guessing at `origin/<name>`. Counting is
+/// local: nothing here contacts the remote, so a fetch is still the user's to
+/// run and the viewer never blocks on the network.
+pub fn upstream_of(repo: &Path) -> Option<Upstream> {
+    let out = run_git(repo, ["rev-list", "--count", "--left-right", "@{u}...HEAD"]).ok()?;
+    parse_upstream(&String::from_utf8_lossy(&out))
+}
+
+/// Split the `<behind>\t<ahead>` pair `rev-list --left-right` prints.
+///
+/// Left is the upstream side of the `...` range and right is ours, so the
+/// columns arrive in the opposite order to how they are displayed.
+fn parse_upstream(text: &str) -> Option<Upstream> {
+    let mut counts = text.split_whitespace();
+    let behind = counts.next()?.parse().ok()?;
+    let ahead = counts.next()?.parse().ok()?;
+    Some(Upstream { ahead, behind })
+}
+
 /// List every file git tracks, whether or not it changed.
 ///
 /// Used by the "show all files" view. `-z` for the same reason as `status`:
@@ -343,12 +467,46 @@ mod tests {
     }
 
     #[test]
-    fn unmerged_entries_are_reported_as_modified() {
+    fn an_unmerged_entry_is_reported_as_a_conflict() {
+        // A conflict blocks work in a way an ordinary edit does not, so it must
+        // be distinguishable from one at a glance.
         let input = b"u UU N... 100644 100644 100644 100644 aaa bbb ccc conflicted.rs\0";
         let strays = parse_status(input);
         assert_eq!(strays.len(), 1);
-        assert_eq!(strays[0].status, StrayStatus::Modified);
+        assert_eq!(strays[0].status, StrayStatus::Conflicted);
         assert_eq!(strays[0].path, PathBuf::from("conflicted.rs"));
+    }
+
+    #[test]
+    fn every_unmerged_combination_is_a_conflict() {
+        // Porcelain v2 spells out which side did what — both deleted, both
+        // added, one side modified. They are all conflicts to a viewer.
+        for xy in [b"DD", b"AU", b"UD", b"UA", b"DU", b"AA", b"UU"] {
+            let mut input = Vec::from(&b"u "[..]);
+            input.extend_from_slice(xy);
+            input.extend_from_slice(
+                b" N... 100644 100644 100644 100644 aaa bbb ccc conflicted.rs\0",
+            );
+
+            let strays = parse_status(&input);
+            assert_eq!(
+                strays[0].status,
+                StrayStatus::Conflicted,
+                "{} should be a conflict",
+                String::from_utf8_lossy(xy)
+            );
+        }
+    }
+
+    #[test]
+    fn a_conflicted_file_can_still_be_opened() {
+        // Resolving a conflict means editing the file, so `e` must work on it.
+        assert!(StrayStatus::Conflicted.is_openable());
+    }
+
+    #[test]
+    fn a_conflict_carries_its_own_marker() {
+        assert_eq!(StrayStatus::Conflicted.glyph(), 'U');
     }
 
     #[test]
@@ -415,6 +573,42 @@ mod tests {
     #[test]
     fn a_submodule_carries_its_own_marker() {
         assert_eq!(StrayStatus::Submodule.glyph(), 'S');
+    }
+
+    #[test]
+    fn upstream_distance_reads_both_columns() {
+        // `rev-list --count --left-right` prints "<behind>\t<ahead>": the left
+        // side is the upstream's exclusive commits, the right side is ours.
+        assert_eq!(
+            parse_upstream("3\t5\n"),
+            Some(Upstream {
+                ahead: 5,
+                behind: 3
+            })
+        );
+    }
+
+    #[test]
+    fn a_branch_level_with_its_upstream_is_neither_ahead_nor_behind() {
+        let up = parse_upstream("0\t0\n").expect("in sync is still an answer");
+        assert_eq!(up.ahead, 0);
+        assert_eq!(up.behind, 0);
+        assert!(up.is_in_sync());
+    }
+
+    #[test]
+    fn a_branch_with_no_upstream_reports_nothing() {
+        // git writes an error and nothing to stdout; an empty answer must not
+        // be read as "in sync", which would be a lie.
+        assert_eq!(parse_upstream(""), None);
+        assert_eq!(parse_upstream("\n"), None);
+    }
+
+    #[test]
+    fn unparsable_counts_are_refused_rather_than_guessed() {
+        assert_eq!(parse_upstream("garbage"), None);
+        assert_eq!(parse_upstream("1"), None, "one column is not a pair");
+        assert_eq!(parse_upstream("x\ty"), None);
     }
 
     #[test]

@@ -7,7 +7,7 @@
 //! whole point of the hand-off, and [`crate::agent::compose`] strips the control
 //! characters that could press Enter on the user's behalf.
 
-use super::{App, Notice};
+use super::{App, Input, Notice, View};
 
 impl App {
     /// Open the prompt line for the selected file.
@@ -25,18 +25,24 @@ impl App {
         }
 
         Self {
-            prompt: Some(String::new()),
+            input: Input {
+                prompt: Some(String::new()),
+                ..self.input
+            },
             ..self
         }
     }
 
     /// Append a character to the prompt being typed.
     pub fn prompt_push(self, c: char) -> Self {
-        match self.prompt {
+        match self.input.prompt {
             Some(mut text) => {
                 text.push(c);
                 Self {
-                    prompt: Some(text),
+                    input: Input {
+                        prompt: Some(text),
+                        ..self.input
+                    },
                     ..self
                 }
             }
@@ -46,11 +52,14 @@ impl App {
 
     /// Remove the last character from the prompt.
     pub fn prompt_backspace(self) -> Self {
-        match self.prompt {
+        match self.input.prompt {
             Some(mut text) => {
                 text.pop();
                 Self {
-                    prompt: Some(text),
+                    input: Input {
+                        prompt: Some(text),
+                        ..self.input
+                    },
                     ..self
                 }
             }
@@ -61,7 +70,10 @@ impl App {
     /// Abandon the prompt without sending it.
     pub fn cancel_prompt(self) -> Self {
         Self {
-            prompt: None,
+            input: Input {
+                prompt: None,
+                ..self.input
+            },
             ..self
         }
     }
@@ -71,7 +83,7 @@ impl App {
     /// The text is typed into the agent's input but NOT submitted: the user
     /// reads it in place and presses Enter themselves.
     pub fn send_prompt(self) -> Self {
-        let Some(text) = self.prompt.clone() else {
+        let Some(text) = self.input.prompt.clone() else {
             return self;
         };
         let Some((root, stray)) = self.selected_stray() else {
@@ -91,8 +103,14 @@ impl App {
         };
 
         Self {
-            prompt: None,
-            notice: Some(notice),
+            view: View {
+                notice: Some(notice),
+                ..self.view
+            },
+            input: Input {
+                prompt: None,
+                ..self.input
+            },
             ..self
         }
     }
@@ -101,27 +119,16 @@ impl App {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::discover::Scope;
-    use crate::model::Diff;
-    use std::collections::BTreeSet;
 
     /// An app with no projects: enough to drive the prompt's own state, which
     /// does not depend on what is selected until the text is sent.
     fn empty_app(prompt: Option<String>) -> App {
         App {
-            projects: Vec::new(),
-            rows: Vec::new(),
-            selected: 0,
-            collapsed: BTreeSet::new(),
-            diff: Diff::Empty,
-            diff_scroll: 0,
-            notice: None,
-            should_quit: false,
-            scope: Scope::AllWorkspaces,
-            show_all: false,
-            show_help: false,
-            prompt,
-            herdr_bin: "herdr".into(),
+            input: Input {
+                prompt,
+                ..App::for_test().input
+            },
+            ..App::for_test()
         }
     }
 
@@ -130,18 +137,18 @@ mod tests {
         let app = empty_app(Some(String::new()));
 
         let typed = app.prompt_push('h').prompt_push('i').prompt_push('!');
-        assert_eq!(typed.prompt.as_deref(), Some("hi!"));
+        assert_eq!(typed.input.prompt.as_deref(), Some("hi!"));
 
         let corrected = typed.prompt_backspace();
-        assert_eq!(corrected.prompt.as_deref(), Some("hi"));
+        assert_eq!(corrected.input.prompt.as_deref(), Some("hi"));
 
-        assert_eq!(corrected.cancel_prompt().prompt, None);
+        assert_eq!(corrected.cancel_prompt().input.prompt, None);
     }
 
     #[test]
     fn typing_is_ignored_when_no_prompt_is_open() {
         let app = empty_app(None);
-        assert_eq!(app.prompt_push('x').prompt, None);
+        assert_eq!(app.prompt_push('x').input.prompt, None);
     }
 
     #[test]
@@ -149,7 +156,7 @@ mod tests {
         // Backspace past the start must not close the line: the user is still
         // composing, and a vanished prompt would swallow the next keystrokes.
         let app = empty_app(Some(String::new())).prompt_backspace();
-        assert_eq!(app.prompt.as_deref(), Some(""));
+        assert_eq!(app.input.prompt.as_deref(), Some(""));
     }
 
     #[test]
@@ -157,6 +164,6 @@ mod tests {
         // No selection means nowhere to send: closing beats leaving the line
         // open with text that can never go anywhere.
         let app = empty_app(Some("about what?".into())).send_prompt();
-        assert_eq!(app.prompt, None);
+        assert_eq!(app.input.prompt, None);
     }
 }

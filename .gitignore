@@ -1,2 +1,9 @@
 /target
 /graphify-out
+# Where the install script and `make link` put the binary herdr launches.
+/bin
+
+# vhs writes an mp4 beside every demo gif. GitHub will not play a repo-local
+# mp4 inline, so the README carries the gifs and these are only worth keeping
+# locally — for a release note, where an uploaded video does play.
+/docs/demo/*.mp4

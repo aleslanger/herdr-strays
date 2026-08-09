@@ -10,13 +10,23 @@ env:
 
 jobs:
   check:
-    # The integration tests shell out to the real git binary, and the plugin
-    # only claims linux and macos, so both are worth running.
+    # The integration tests shell out to the real git binary, so every platform
+    # the manifest claims is worth running rather than cross-compiling for.
+    # Windows is the one that catches path and environment assumptions: a
+    # `$HOME` that is never set, backslashes in a worktree path, CRLF from git.
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, macos-latest]
+        os: [ubuntu-latest, macos-latest, windows-latest]
     runs-on: ${{ matrix.os }}
+
+    # Windows would otherwise run these in PowerShell, where `||` is not the
+    # shell operator the toolchain step is written against. Every runner ships
+    # bash, so one shell keeps the steps identical across the matrix. This says
+    # nothing about the plugin needing a shell — the binary does not.
+    defaults:
+      run:
+        shell: bash
 
     steps:
       - uses: actions/checkout@v4

@@ -1,0 +1,130 @@
+name: Release
+
+# Publishes the binaries `scripts/install.sh` looks for. Without them every
+# install falls back to compiling on the user's machine, which is the thing
+# this workflow exists to avoid.
+on:
+  push:
+    tags: ["v*"]
+  # Buildable without tagging, to check the matrix still works before a release.
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # musl on linux: statically linked, so a binary built on current CI
+          # runs on an older distribution's glibc.
+          - target: x86_64-unknown-linux-musl
+            os: ubuntu-latest
+          - target: aarch64-unknown-linux-musl
+            os: ubuntu-24.04-arm
+          - target: x86_64-apple-darwin
+            os: macos-latest
+          - target: aarch64-apple-darwin
+            os: macos-latest
+          # Windows has no install.sh to fetch this, so nothing downloads it
+          # automatically. It is here so the binary the manifest's `platforms`
+          # promises exists to be placed by hand, and so a release build for
+          # Windows cannot quietly stop compiling.
+          - target: x86_64-pc-windows-msvc
+            os: windows-latest
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # rust-toolchain.toml pins the version; naming one here too would let the
+      # two drift apart.
+      - name: Install the pinned toolchain
+        run: |
+          rustup show active-toolchain || rustup toolchain install
+          rustup target add ${{ matrix.target }}
+
+      # The musl targets need a linker that the runner image does not carry.
+      - name: Install the musl toolchain
+        if: endsWith(matrix.target, '-musl')
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y musl-tools
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: ${{ matrix.target }}
+
+      - name: Build
+        run: cargo build --release --locked --target ${{ matrix.target }}
+
+      # One binary per archive, named exactly as install.sh expects.
+      - name: Package
+        if: "!contains(matrix.target, 'windows')"
+        run: |
+          tar -czf "herdr-strays-${{ matrix.target }}.tar.gz" \
+            -C "target/${{ matrix.target }}/release" herdr-strays
+
+      # Windows carries the .exe suffix, and a zip is what a Windows user can
+      # open without reaching for another tool. install.sh never sees this one.
+      - name: Package for Windows
+        if: contains(matrix.target, 'windows')
+        shell: pwsh
+        run: |
+          Compress-Archive `
+            -Path "target/${{ matrix.target }}/release/herdr-strays.exe" `
+            -DestinationPath "herdr-strays-${{ matrix.target }}.zip"
+
+      # Both archive shapes, so adding a target does not need this edited again.
+      - uses: actions/upload-artifact@v4
+        with:
+          name: herdr-strays-${{ matrix.target }}
+          path: |
+            herdr-strays-${{ matrix.target }}.tar.gz
+            herdr-strays-${{ matrix.target }}.zip
+          if-no-files-found: error
+          retention-days: 1
+
+  publish:
+    needs: build
+    runs-on: ubuntu-latest
+    # A dispatch run proves the matrix builds; only a tag publishes.
+    if: startsWith(github.ref, 'refs/tags/v')
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          merge-multiple: true
+
+      # install.sh refuses an archive whose hash is not listed here, so this
+      # file is as much a part of the release as the binaries.
+      - name: Checksum
+        working-directory: artifacts
+        run: sha256sum *.tar.gz *.zip > SHA256SUMS
+
+      # The tag must match the version the manifest carries, or install.sh will
+      # ask for a release that does not exist.
+      - name: Check the tag matches the manifest
+        run: |
+          manifest=$(sed -n 's/^version *= *"\([^"]*\)".*/\1/p' herdr-plugin.toml | head -n 1)
+          tag="${GITHUB_REF_NAME#v}"
+          if [ "$manifest" != "$tag" ]; then
+            echo "tag $tag does not match herdr-plugin.toml version $manifest" >&2
+            exit 1
+          fi
+
+      - name: Publish
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            artifacts/*.tar.gz
+            artifacts/*.zip
+            artifacts/SHA256SUMS
+          generate_release_notes: true

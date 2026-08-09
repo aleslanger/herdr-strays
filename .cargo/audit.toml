@@ -1,18 +1,12 @@
 # cargo-audit configuration.
 #
 # Vulnerabilities fail the audit. Unmaintained and unsound advisories are
-# reported but do not fail it, so they stay visible without blocking a build
-# over something that has no fix available at this MSRV.
+# reported but do not fail it, so a dependency with no fix available stays
+# visible without blocking the build.
 #
-# Two are open against this tree today, both reached through ratatui 0.29:
-#
-#   RUSTSEC-2024-0436  paste 1.0.15  unmaintained (proc-macro, no runtime surface)
-#   RUSTSEC-2026-0002  lru 0.12.5    unsound `IterMut` (this crate never calls lru)
-#
-# Both are fixed by ratatui 0.30, which requires rustc 1.88. This crate targets
-# 1.82 because herdr builds it on the user's machine at install time, and a
-# six-version MSRV jump costs more than two non-vulnerability advisories.
-# Revisit when the ecosystem's baseline has moved.
+# Nothing is open against this tree today. The two that were — RUSTSEC-2024-0436
+# (paste, unmaintained) and RUSTSEC-2026-0002 (lru, unsound `IterMut`) — were
+# reached through ratatui 0.29 and went away with ratatui 0.30.
 
 [advisories]
 # Deliberately empty: nothing is hidden. The severities below decide what fails.

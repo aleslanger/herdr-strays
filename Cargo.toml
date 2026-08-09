@@ -2,7 +2,10 @@
 name = "herdr-strays"
 version = "0.1.0"
 edition = "2021"
-rust-version = "1.82"
+# The floor for the source-build fallback in scripts/install.sh. Most installs
+# now download a release built by CI, so this no longer has to cover whatever
+# rustc a user happens to have — only the machines that still compile.
+rust-version = "1.88"
 description = "Which files strayed from HEAD — see the diff, jump to your editor."
 license = "MIT"
 repository = "https://github.com/aleslanger/herdr-strays"
@@ -10,8 +13,49 @@ repository = "https://github.com/aleslanger/herdr-strays"
 [dependencies]
 crossterm = "0.29.0"
 notify = "8.2.0"
-ratatui = "0.29.0"
+ratatui = "0.30.2"
 shell-words = "1.1.1"
+
+# Only `--json` uses these. The viewer's own types are deliberately not
+# `Serialize`: what the machine interface promises is a separate contract from
+# how the TUI happens to store things, so `src/json.rs` declares its own shapes
+# and borrows into them. Renaming a field of `ProjectStrays` then breaks a build
+# rather than quietly changing output somebody parses.
+serde = { version = "1.0.228", features = ["derive"] }
+serde_json = "1.0.145"
+
+# `config.toml`. TOML rather than the hand-rolled parsing the annotation store
+# uses, for the opposite reason: a store record is three integers and two
+# strings written by this program, while a config file is written by hand and
+# has to report a misplaced comma by line rather than degrade to "no settings".
+toml = "1.1.4"
+
+# Syntax highlighting. Each grammar is a compiled parse table rather than code,
+# which is why they dominate the binary — around 21 MB across the sixteen, and
+# `strip` cannot touch data. That is the deliberate price of colouring a diff in
+# whatever language the reader happens to be looking at.
+#
+# Two languages are absent for API reasons rather than choice: tree-sitter-toml
+# is still on the pre-0.23 `language()` binding with no `LANGUAGE` const, and
+# tree-sitter-md nests its exports behind a submodule.
+tree-sitter = "0.26.11"
+tree-sitter-highlight = "0.26.11"
+tree-sitter-bash = "0.25.1"
+tree-sitter-c = "0.24.2"
+tree-sitter-c-sharp = "0.23.5"
+tree-sitter-cpp = "0.23.4"
+tree-sitter-css = "0.25.0"
+tree-sitter-go = "0.25.0"
+tree-sitter-html = "0.23.2"
+tree-sitter-java = "0.23.5"
+tree-sitter-javascript = "0.25.0"
+tree-sitter-json = "0.24.8"
+tree-sitter-php = "0.24.2"
+tree-sitter-python = "0.25.0"
+tree-sitter-ruby = "0.23.1"
+tree-sitter-rust = "0.24.2"
+tree-sitter-typescript = "0.23.2"
+tree-sitter-yaml = "0.7.2"
 
 [dev-dependencies]
 tempfile = "3.27.0"

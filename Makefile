@@ -39,6 +39,10 @@ audit: ## Check dependencies against the RustSec advisory database
 	cargo audit
 
 link: release ## Build, then register this checkout with herdr
+	@# `plugin link` skips the [[build]] step, so the binary the manifest
+	@# launches has to be put in place here.
+	mkdir -p bin
+	cp $(BIN) bin/herdr-strays
 	$(HERDR) plugin link "$(CURDIR)"
 
 unlink: ## Deregister the checkout, leaving files alone

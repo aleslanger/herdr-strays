@@ -9,138 +9,76 @@ use std::collections::BTreeMap;
 use std::collections::BTreeSet;
 use std::path::{Path, PathBuf};
 
-use crate::discover::Project;
-use crate::model::Stray;
+mod folding;
+mod nodes;
 
-/// One project and the files that strayed inside it.
-#[derive(Debug, Clone)]
-pub struct ProjectStrays {
-    pub project: Project,
-    pub strays: Vec<Stray>,
-    /// The branch this worktree is on, or a short commit when detached.
-    pub branch: Option<String>,
-    /// Set when listing this project's status failed, so the row can say why
-    /// instead of pretending the worktree is clean.
-    pub error: Option<String>,
-}
-
-/// A single rendered line.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum Row {
-    Project {
-        /// Index into the `ProjectStrays` slice this row came from.
-        project: usize,
-        collapsed: bool,
-        /// Number of strays in the project, shown alongside its name.
-        count: usize,
-        error: Option<String>,
-    },
-    Directory {
-        project: usize,
-        /// Path relative to the project root, e.g. `src/git`.
-        path: PathBuf,
-        /// Nesting level below the project, starting at 0.
-        depth: usize,
-        collapsed: bool,
-        /// Strays anywhere beneath this directory. Shown when it is folded, so
-        /// a collapsed tree still says how much it is hiding.
-        count: usize,
-    },
-    File {
-        project: usize,
-        /// Index into that project's `strays`.
-        stray: usize,
-        depth: usize,
-    },
-}
-
-impl Row {
-    /// Which project this row belongs to.
-    pub fn project(&self) -> usize {
-        match self {
-            Row::Project { project, .. }
-            | Row::Directory { project, .. }
-            | Row::File { project, .. } => *project,
-        }
-    }
-
-    /// A row the cursor can act on with `e` — only files open in an editor.
-    pub fn is_file(&self) -> bool {
-        matches!(self, Row::File { .. })
-    }
-
-    /// A row that can be expanded or collapsed.
-    pub fn is_collapsible(&self) -> bool {
-        matches!(self, Row::Project { .. } | Row::Directory { .. })
-    }
-}
-
-/// Identifies a collapsible node across refreshes, so collapse state survives
-/// the list being rebuilt.
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
-pub enum NodeId {
-    Project(PathBuf),
-    /// Project root plus the directory's path relative to it.
-    Directory(PathBuf, PathBuf),
-}
-
-/// A directory holding at least this many strays starts folded.
-///
-/// A wholly untracked directory — a build cache, a generated-output tree — can
-/// hold thousands of files, and `--untracked-files=all` reports every one. They
-/// still belong in the tree, but unfolding them by default buries every other
-/// project: a single generated-output cache can easily account for well over
-/// nine tenths of the rows in a repository.
-pub const AUTO_FOLD_THRESHOLD: usize = 25;
-
-/// Directories that should start folded because of their size.
-///
-/// Computed once when the projects are loaded, then merged into the user's own
-/// fold state — after which the user's toggles win, so unfolding one sticks.
-pub fn auto_folded(projects: &[ProjectStrays]) -> BTreeSet<NodeId> {
-    let mut folded = BTreeSet::new();
-
-    for entry in projects {
-        let mut counts: BTreeMap<PathBuf, usize> = BTreeMap::new();
-        for stray in &entry.strays {
-            // Charge the file to every ancestor, so a deep cache folds at its
-            // outermost directory rather than only at the leaf.
-            let dir = stray.path.parent().unwrap_or(Path::new(""));
-            for ancestor in dir.ancestors() {
-                if ancestor.as_os_str().is_empty() {
-                    continue;
-                }
-                *counts.entry(ancestor.to_path_buf()).or_default() += 1;
-            }
-        }
-
-        for (dir, count) in counts {
-            if count < AUTO_FOLD_THRESHOLD {
-                continue;
-            }
-            // Only fold the outermost oversized directory: folding it already
-            // hides its children, and marking them too would make unfolding it
-            // reveal nothing.
-            let parent_also_folded = dir
-                .parent()
-                .filter(|p| !p.as_os_str().is_empty())
-                .is_some_and(|p| {
-                    folded.contains(&NodeId::Directory(
-                        entry.project.root.clone(),
-                        p.to_path_buf(),
-                    ))
-                });
-            if !parent_also_folded {
-                folded.insert(NodeId::Directory(entry.project.root.clone(), dir));
-            }
-        }
-    }
-
-    folded
-}
+pub use folding::auto_folded;
+pub use nodes::{NodeId, ProjectStrays, Row};
 
 /// Flatten projects into rows, skipping anything under a collapsed node.
 pub fn flatten(projects: &[ProjectStrays], collapsed: &BTreeSet<NodeId>) -> Vec<Row> {
+    flatten_filtered(projects, collapsed, "")
+}
+
+/// Flatten projects, keeping only files whose path matches `query`.
+///
+/// A filtered list is flat: directory rows and the fold state are dropped,
+/// because the point of typing a query is to stop navigating a tree. Project
+/// rows stay, so a match is still attributable to a repository — and a project
+/// with no matches disappears entirely rather than sitting there empty.
+///
+/// Matches are ordered by [`crate::filter::score`] within each project, so the
+/// closest one is at the top where the cursor already is.
+pub fn flatten_filtered(
+    projects: &[ProjectStrays],
+    collapsed: &BTreeSet<NodeId>,
+    query: &str,
+) -> Vec<Row> {
+    if query.is_empty() {
+        return flatten_tree(projects, collapsed);
+    }
+
+    let mut rows = Vec::new();
+
+    for (index, entry) in projects.iter().enumerate() {
+        let mut hits: Vec<(usize, usize)> = entry
+            .strays
+            .iter()
+            .enumerate()
+            .filter_map(|(stray, s)| {
+                let path = s.path.to_string_lossy();
+                crate::filter::score(query, &path).map(|score| (score, stray))
+            })
+            .collect();
+
+        if hits.is_empty() {
+            continue;
+        }
+
+        // Best first; ties keep path order, which is the order they arrived in.
+        hits.sort_by_key(|(score, stray)| (*score, *stray));
+
+        rows.push(Row::Project {
+            project: index,
+            collapsed: false,
+            count: hits.len(),
+            error: entry.error.clone(),
+        });
+
+        for (_, stray) in hits {
+            rows.push(Row::File {
+                project: index,
+                stray,
+                depth: 0,
+            });
+        }
+    }
+
+    rows
+}
+
+/// The unfiltered tree, honouring collapsed nodes.
+fn flatten_tree(projects: &[ProjectStrays], collapsed: &BTreeSet<NodeId>) -> Vec<Row> {
     let mut rows = Vec::new();
 
     for (index, entry) in projects.iter().enumerate() {
@@ -280,7 +218,9 @@ pub fn node_of(projects: &[ProjectStrays], row: &Row) -> Option<NodeId> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::model::StrayStatus;
+    use crate::config::DEFAULT_AUTO_FOLD_THRESHOLD;
+    use crate::discover::Project;
+    use crate::model::{Stray, StrayStatus};
 
     fn project(name: &str, root: &str, paths: &[&str]) -> ProjectStrays {
         ProjectStrays {
@@ -293,8 +233,101 @@ mod tests {
                 .map(|p| Stray::new(StrayStatus::Modified, *p))
                 .collect(),
             branch: Some("main".into()),
+            upstream: None,
+            touched: None,
+            agent: None,
             error: None,
         }
+    }
+
+    #[test]
+    fn a_query_keeps_only_the_files_it_names() {
+        let projects = vec![project(
+            "repo",
+            "/repo",
+            &["src/app/mod.rs", "src/ui.rs", "LICENSE"],
+        )];
+        let rows = flatten_filtered(&projects, &BTreeSet::new(), "amd");
+
+        let files: Vec<_> = rows.iter().filter(|r| r.is_file()).collect();
+        assert_eq!(files.len(), 1, "only src/app/mod.rs has a, m, d in order");
+    }
+
+    #[test]
+    fn a_filtered_list_drops_directory_rows() {
+        // Typing a query is how the user stops navigating a tree.
+        let projects = vec![project("repo", "/repo", &["src/app/mod.rs"])];
+        let rows = flatten_filtered(&projects, &BTreeSet::new(), "mod");
+
+        assert!(
+            !rows.iter().any(|r| matches!(r, Row::Directory { .. })),
+            "no directory rows in a filtered list"
+        );
+    }
+
+    #[test]
+    fn a_project_with_no_matches_disappears() {
+        // An empty project row would be a row the user has to skip past.
+        let projects = vec![
+            project("hit", "/hit", &["src/mod.rs"]),
+            project("miss", "/miss", &["other.txt"]),
+        ];
+        let rows = flatten_filtered(&projects, &BTreeSet::new(), "mod");
+
+        let shown: Vec<usize> = rows.iter().map(Row::project).collect();
+        assert!(!shown.contains(&1), "the project with no matches is gone");
+    }
+
+    #[test]
+    fn a_filtered_project_counts_its_matches_not_its_strays() {
+        let projects = vec![project("repo", "/repo", &["a/mod.rs", "b.txt", "c.txt"])];
+        let rows = flatten_filtered(&projects, &BTreeSet::new(), "mod");
+
+        let Row::Project { count, .. } = rows[0] else {
+            panic!("the first row is the project");
+        };
+        assert_eq!(count, 1, "one match, not three strays");
+    }
+
+    #[test]
+    fn the_closest_match_comes_first() {
+        // The cursor starts at the top, so the best match belongs there.
+        let projects = vec![project(
+            "repo",
+            "/repo",
+            &["m/deep/nested/other-d.rs", "src/mod.rs"],
+        )];
+        let rows = flatten_filtered(&projects, &BTreeSet::new(), "mod");
+
+        let Row::File { stray, .. } = rows[1] else {
+            panic!("a file follows the project row");
+        };
+        assert_eq!(stray, 1, "src/mod.rs is the tighter match");
+    }
+
+    #[test]
+    fn an_empty_query_gives_back_the_whole_tree() {
+        let projects = vec![project("repo", "/repo", &["src/app/mod.rs"])];
+
+        assert_eq!(
+            flatten_filtered(&projects, &BTreeSet::new(), ""),
+            flatten(&projects, &BTreeSet::new()),
+            "an empty filter line shows everything"
+        );
+    }
+
+    #[test]
+    fn a_filtered_list_ignores_the_fold_state() {
+        // A folded project would otherwise hide the matches being searched for.
+        let projects = vec![project("repo", "/repo", &["src/mod.rs"])];
+        let folded: BTreeSet<NodeId> =
+            std::iter::once(NodeId::Project(PathBuf::from("/repo"))).collect();
+
+        let rows = flatten_filtered(&projects, &folded, "mod");
+        assert!(
+            rows.iter().any(Row::is_file),
+            "the match shows through a folded project"
+        );
     }
 
     fn labels(rows: &[Row], projects: &[ProjectStrays]) -> Vec<String> {
@@ -450,13 +483,13 @@ mod tests {
 
     #[test]
     fn an_oversized_directory_starts_folded() {
-        let files: Vec<String> = (0..AUTO_FOLD_THRESHOLD + 5)
+        let files: Vec<String> = (0..DEFAULT_AUTO_FOLD_THRESHOLD + 5)
             .map(|i| format!("cache/blob{i}.json"))
             .collect();
         let refs: Vec<&str> = files.iter().map(String::as_str).collect();
         let projects = vec![project("app", "/repo/app", &refs)];
 
-        let folded = auto_folded(&projects);
+        let folded = auto_folded(&projects, DEFAULT_AUTO_FOLD_THRESHOLD);
         assert!(folded.contains(&NodeId::Directory(
             PathBuf::from("/repo/app"),
             PathBuf::from("cache")
@@ -470,20 +503,20 @@ mod tests {
     #[test]
     fn a_small_directory_stays_open() {
         let projects = vec![project("app", "/repo/app", &["src/main.rs", "src/lib.rs"])];
-        assert!(auto_folded(&projects).is_empty());
+        assert!(auto_folded(&projects, DEFAULT_AUTO_FOLD_THRESHOLD).is_empty());
     }
 
     #[test]
     fn only_the_outermost_oversized_directory_is_folded() {
         // A deep cache: folding both `out` and `out/ast` would mean unfolding
         // `out` reveals an empty-looking directory.
-        let files: Vec<String> = (0..AUTO_FOLD_THRESHOLD + 5)
+        let files: Vec<String> = (0..DEFAULT_AUTO_FOLD_THRESHOLD + 5)
             .map(|i| format!("out/ast/blob{i}.json"))
             .collect();
         let refs: Vec<&str> = files.iter().map(String::as_str).collect();
         let projects = vec![project("app", "/repo/app", &refs)];
 
-        let folded = auto_folded(&projects);
+        let folded = auto_folded(&projects, DEFAULT_AUTO_FOLD_THRESHOLD);
         assert_eq!(folded.len(), 1, "got {folded:?}");
         assert!(folded.contains(&NodeId::Directory(
             PathBuf::from("/repo/app"),
@@ -493,13 +526,16 @@ mod tests {
 
     #[test]
     fn a_folded_directory_reports_how_much_it_hides() {
-        let files: Vec<String> = (0..AUTO_FOLD_THRESHOLD + 5)
+        let files: Vec<String> = (0..DEFAULT_AUTO_FOLD_THRESHOLD + 5)
             .map(|i| format!("cache/blob{i}.json"))
             .collect();
         let refs: Vec<&str> = files.iter().map(String::as_str).collect();
         let projects = vec![project("app", "/repo/app", &refs)];
 
-        let rows = flatten(&projects, &auto_folded(&projects));
+        let rows = flatten(
+            &projects,
+            &auto_folded(&projects, DEFAULT_AUTO_FOLD_THRESHOLD),
+        );
         let Row::Directory {
             count, collapsed, ..
         } = &rows[1]
@@ -507,7 +543,7 @@ mod tests {
             panic!("expected a directory row, got {:?}", rows[1]);
         };
         assert!(collapsed);
-        assert_eq!(*count, AUTO_FOLD_THRESHOLD + 5);
+        assert_eq!(*count, DEFAULT_AUTO_FOLD_THRESHOLD + 5);
     }
 
     #[test]
