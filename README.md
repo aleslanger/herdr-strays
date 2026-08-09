@@ -203,26 +203,39 @@ d = "page-diff-down" # takes `d` from whatever held it
 q = false            # unbind a key entirely
 ```
 
-With `[forge]` on, a project row carries what GitHub says about the branch it
-is on: `✓` for a passing run, `✗` for a failing one, `◔` for one still going,
-`–` for one that was cancelled, and a count like `3pr` when pull requests are
-open. A repository nothing is known about draws nothing rather than a
-placeholder, so an unanswered question never reads as an answer.
+With `[forge]` on, a project row also carries what GitHub says about the branch
+it is on. A row can end up reading `↑3 ✗ 3pr 4💬 ±` — five answers at once, none
+of which spell themselves out:
 
-A red run gets one more word when the reason can be named: `tests✗` when what
-failed was the tests rather than a formatter or a linter. The two failures lead
-to different files and different work, and `✗` alone sends the reader to a
-browser to find out which they have. Passing tests draw nothing — the run's own
-`✓` already said so — and a failure at a step this cannot classify draws nothing
-either, since blaming the tests for a broken build would be a guess.
+| Mark | On a project row |
+|---|---|
+| `↑3↓5` | three commits to push, five to pull |
+| `●` `○` | an agent is working here, or waiting |
+| `✓` `✗` | the last CI run passed, or failed |
+| `◔` `–` | it is still going, or was cancelled |
+| `tests✗` | what failed was the tests, not a linter or a build step |
+| `3pr` | three pull requests are open here |
+| `4💬` | four comments on the pull request for the branch you are on |
+| `±` | a reviewer asked for changes and has not since approved |
 
-Next to that comes the review on the reader's own pull request — the one for
-the branch checked out, not everybody else's: `4💬` for what has been said on
-it, and a red `±` when a reviewer asked for changes and has not since approved.
-The two are separate because they answer different questions: twenty comments
+| Mark | In the diff |
+|---|---|
+| `▸` | where the cursor is |
+| `💬` | a reviewer wrote about this line |
+| `◆` | you left a note on this line |
+
+Three of those are narrower than they look. `tests✗` is only drawn when the
+failing step can be named as the tests: a broken build and broken tests lead to
+different files and different work, but blaming the tests for a failure this
+cannot classify would be a guess, so it says nothing instead. The comment count
+and `±` are separate because they answer different questions — twenty comments
 can all be agreement, and one "changes requested" with nothing written still
-blocks the merge. A pull request nobody has reviewed yet draws nothing, since
-that is the ordinary state of one just opened.
+blocks the merge. And both are about the reader's own pull request, the one for
+the branch checked out, not everybody else's.
+
+Nothing is drawn where nothing is known: a repository the forge has not
+answered for, and a pull request nobody has reviewed, both stay blank rather
+than showing a placeholder that reads like an answer.
 
 The count says somebody spoke; the diff says what they said. A line a reviewer
 wrote about carries `💬` in the gutter, and stepping onto it puts their words
