@@ -4,6 +4,18 @@ Notable changes to strays. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the versions
 follow [semantic versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.1] - 2026-08-09
+
+### Fixed
+
+- Three tests failed on Windows over checkout settings rather than anything
+  they were testing. The two that read the README through `include_str!` got
+  the file as CRLF and split on `"\n\n"`, which a CRLF file does not contain;
+  the TOML parser then rejected the stray `\r`. They normalise the line endings
+  first. The third built a path containing a backslash — a separator on
+  Windows, so `PathBuf` rewrote it and the round trip was compared against a
+  string the path never held.
+
 ## [1.0.0] - 2026-08-09
 
 The keys, the panes and the config file are settled enough to promise not to
@@ -145,6 +157,7 @@ First release.
 - A key reference, a show-all-tracked-files view, and auto-folding for
   oversized directories.
 
-[Unreleased]: https://github.com/aleslanger/herdr-strays/compare/v1.0.0...HEAD
+[Unreleased]: https://github.com/aleslanger/herdr-strays/compare/v1.0.1...HEAD
+[1.0.1]: https://github.com/aleslanger/herdr-strays/releases/tag/v1.0.1
 [1.0.0]: https://github.com/aleslanger/herdr-strays/releases/tag/v1.0.0
 [0.1.0]: https://github.com/aleslanger/herdr-strays/releases/tag/0.0.4
