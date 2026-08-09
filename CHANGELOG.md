@@ -4,7 +4,10 @@ Notable changes to strays. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the versions
 follow [semantic versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [1.0.0] - 2026-08-09
+
+The keys, the panes and the config file are settled enough to promise not to
+move them under you: from here a breaking change costs a major version.
 
 ### Added
 
@@ -28,6 +31,19 @@ follow [semantic versioning](https://semver.org/spec/v2.0.0.html).
   the differing words are emphasised; a pair too dissimilar to be a rewrite of
   each other falls back to the whole-line colour rather than highlighting
   everything.
+- **The old code beside the new.** `V` splits the diff into two columns, the
+  way an editor shows a comparison: a replaced line sits opposite its
+  replacement, and a line only added or only removed leaves the other column
+  blank, so the shape of a change reads without decoding the `+` and `-` marks.
+  The pairing is positional, which is what a unified diff supports — it records
+  that a run of removals precedes a run of additions, not which line became
+  which. Where the runs differ in length the shorter runs out and the remaining
+  lines stand alone, because three lines becoming one is not three pairs. Off
+  by default: one column reads fine in a narrow pane, and the split wants
+  roughly twice the width.
+- **A key reference that scrolls.** `?` grew past the height of its pane, so
+  the last rows could not be reached. It scrolls on its own offset, leaving the
+  diff behind it where you put it, and winds back to the top when closed.
 - **The shape of recent history.** `L` draws the commit graph as git draws it,
   branches and merges included, so where work diverged and rejoined is visible
   rather than inferred. Enter shows what a commit did. The connector lines
@@ -129,5 +145,6 @@ First release.
 - A key reference, a show-all-tracked-files view, and auto-folding for
   oversized directories.
 
-[Unreleased]: https://github.com/aleslanger/herdr-strays/compare/v0.1.0...HEAD
-[0.1.0]: https://github.com/aleslanger/herdr-strays/releases/tag/v0.1.0
+[Unreleased]: https://github.com/aleslanger/herdr-strays/compare/v1.0.0...HEAD
+[1.0.0]: https://github.com/aleslanger/herdr-strays/releases/tag/v1.0.0
+[0.1.0]: https://github.com/aleslanger/herdr-strays/releases/tag/0.0.4
