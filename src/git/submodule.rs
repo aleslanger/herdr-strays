@@ -117,7 +117,46 @@ fn strays_inside_to_depth(repo: &Path, at: &Path, depth: usize) -> Vec<Stray> {
     inside
 }
 
+/// The submodules in a status output whose insides are worth a `git status`.
+///
+/// Reading the `<sub>` field is what keeps the cost proportional: a submodule
+/// whose only change is the commit the outer repository records has a clean
+/// worktree, and asking it anything would spend a process to be told nothing.
+/// See [`Flags::has_contents_to_read`].
+fn to_read(buf: &[u8]) -> Vec<PathBuf> {
+    let mut worth = Vec::new();
+    let mut records = super::status::NulRecords::new(buf);
+
+    while let Some(record) = records.next() {
+        // Only `1` records carry a `<sub>` field in a position this can read.
+        // A submodule in a `2` (renamed) or `u` (unmerged) record is rare
+        // enough that reading it unconditionally is the cheaper mistake — it
+        // is handled by the caller falling back on the stray's status.
+        if record.first() != Some(&b'1') {
+            continue;
+        }
+        let (Some(sub), Some(path)) = (
+            super::status::field(record, 2),
+            super::status::field_after(record, 8),
+        ) else {
+            continue;
+        };
+        let Some(flags) = Flags::parse(sub) else {
+            continue;
+        };
+        if flags.has_contents_to_read() {
+            worth.push(super::status::lossy_path(path));
+        }
+    }
+
+    worth
+}
+
 /// Fold every submodule's contents into a project's stray list.
+///
+/// Takes the raw status output as well as the parsed strays, because the
+/// `<sub>` flags that say whether a submodule is worth reading do not survive
+/// parsing into a [`Stray`] — see [`to_read`].
 ///
 /// The submodule's own `S` row is kept: it is what carries "the recorded
 /// commit moved", which no file inside can say, and dropping it would make a
@@ -125,13 +164,8 @@ fn strays_inside_to_depth(repo: &Path, at: &Path, depth: usize) -> Vec<Stray> {
 ///
 /// Sorted at the end so a submodule's files sit in path order with everything
 /// else, which is what the tree assumes when it groups them by directory.
-pub fn expanded(repo: &Path, strays: Vec<Stray>) -> Vec<Stray> {
-    let submodules: Vec<PathBuf> = strays
-        .iter()
-        .filter(|s| s.status == StrayStatus::Submodule)
-        .map(|s| s.path.clone())
-        .collect();
-
+pub fn expanded(repo: &Path, buf: &[u8], strays: Vec<Stray>) -> Vec<Stray> {
+    let submodules = to_read(buf);
     if submodules.is_empty() {
         return strays;
     }
@@ -244,13 +278,69 @@ mod tests {
     }
 
     #[test]
+    fn a_submodule_with_a_clean_worktree_is_not_read() {
+        // `SC..`: the outer repository points at a different commit, but
+        // nothing inside differs from the submodule's own HEAD. Captured from
+        // a real repository. Reading it would cost a process to be told
+        // nothing, so the path is never touched — which is what pointing at a
+        // directory that does not exist proves.
+        let strays = to_read(
+            b"\
+1 .M SC.. 160000 160000 160000 aaa bbb vendor/lib\0",
+        );
+
+        assert!(
+            strays.is_empty(),
+            "a moved commit says nothing about the worktree inside"
+        );
+    }
+
+    #[test]
+    fn a_submodule_with_changes_inside_is_read() {
+        // `S.MU`: tracked modifications and untracked files inside.
+        let strays = to_read(
+            b"\
+1 .M S.MU 160000 160000 160000 aaa bbb vendor/lib\0",
+        );
+
+        assert_eq!(strays, vec![PathBuf::from("vendor/lib")]);
+    }
+
+    #[test]
+    fn an_ordinary_file_is_never_something_to_read_into() {
+        let strays = to_read(
+            b"\
+1 .M N... 100644 100644 100644 eee fff src/real-file.rs\0",
+        );
+
+        assert!(strays.is_empty(), "a file is not a repository");
+    }
+
+    #[test]
+    fn each_submodule_is_judged_on_its_own_flags() {
+        // One worth reading and one not, in the same status output: the
+        // decision is per submodule, not per repository.
+        let strays = to_read(
+            b"\
+1 .M SC.. 160000 160000 160000 aaa bbb vendor/clean\0\
+1 .M S.M. 160000 160000 160000 ccc ddd vendor/dirty\0",
+        );
+
+        assert_eq!(strays, vec![PathBuf::from("vendor/dirty")]);
+    }
+
+    #[test]
     fn a_list_without_submodules_is_returned_untouched() {
-        // No submodule means no git call at all.
+        // No submodule means no git call at all — which pointing the repo at a
+        // directory that does not exist is what proves.
+        let buf = b"\
+1 .M N... 100644 100644 100644 eee fff src/a.rs\0\
+? b.txt\0";
         let strays = vec![
             Stray::new(StrayStatus::Modified, "src/a.rs"),
             Stray::new(StrayStatus::Untracked, "b.txt"),
         ];
-        let expanded = expanded(Path::new("/nowhere"), strays.clone());
+        let expanded = expanded(Path::new("/nowhere"), buf, strays.clone());
         assert_eq!(expanded, strays);
     }
 
@@ -312,9 +402,12 @@ mod tests {
     #[test]
     fn an_unreadable_submodule_leaves_its_own_row_standing() {
         // A gitlink pointing at a directory that was never initialised. The
-        // reader should still see that the submodule strayed.
+        // reader should still see that the submodule strayed. `S.M.` so the
+        // read is attempted at all — and fails, which is the point.
+        let buf = b"\
+1 .M S.M. 160000 160000 160000 aaa bbb vendor/lib\0";
         let strays = vec![Stray::new(StrayStatus::Submodule, "vendor/lib")];
-        let expanded = expanded(Path::new("/nowhere"), strays);
+        let expanded = expanded(Path::new("/nowhere"), buf, strays);
 
         assert_eq!(expanded.len(), 1);
         assert_eq!(expanded[0].status, StrayStatus::Submodule);

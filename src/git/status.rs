@@ -34,7 +34,11 @@ pub fn list_strays(repo: &Path) -> Result<Vec<Stray>, GitError> {
         repo,
         ["status", "--porcelain=v2", "-z", "--untracked-files=all"],
     )?;
-    Ok(crate::git::submodule::expanded(repo, parse_status(&out)))
+    Ok(crate::git::submodule::expanded(
+        repo,
+        &out,
+        parse_status(&out),
+    ))
 }
 
 /// List every file that differs from `base`, committed or not.
@@ -249,14 +253,14 @@ fn status_from_xy(xy: &[u8]) -> StrayStatus {
 }
 
 /// Return space-delimited field `n` (0-based) of a record.
-fn field(record: &[u8], n: usize) -> Option<&[u8]> {
+pub(crate) fn field(record: &[u8], n: usize) -> Option<&[u8]> {
     record.split(|b| *b == b' ').nth(n)
 }
 
 /// Return everything from field `n` to the end of the record.
 ///
 /// Paths may contain spaces, so the final field must not be split further.
-fn field_after(record: &[u8], n: usize) -> Option<&[u8]> {
+pub(crate) fn field_after(record: &[u8], n: usize) -> Option<&[u8]> {
     let mut seen = 0;
     let mut idx = 0;
 
@@ -274,18 +278,18 @@ fn field_after(record: &[u8], n: usize) -> Option<&[u8]> {
 
 /// Decode a git path for display. Non-UTF-8 bytes are replaced rather than
 /// dropping the entry, so an odd filename still appears in the list.
-fn lossy_path(bytes: &[u8]) -> std::path::PathBuf {
+pub(crate) fn lossy_path(bytes: &[u8]) -> std::path::PathBuf {
     std::path::PathBuf::from(String::from_utf8_lossy(bytes).into_owned())
 }
 
 /// Iterator over NUL-terminated records, exposing them one at a time so a
 /// rename record can pull its trailing original-path field.
-struct NulRecords<'a> {
+pub(crate) struct NulRecords<'a> {
     rest: &'a [u8],
 }
 
 impl<'a> NulRecords<'a> {
-    fn new(buf: &'a [u8]) -> Self {
+    pub(crate) fn new(buf: &'a [u8]) -> Self {
         Self { rest: buf }
     }
 
@@ -298,7 +302,7 @@ impl<'a> NulRecords<'a> {
         out
     }
 
-    fn next(&mut self) -> Option<&'a [u8]> {
+    pub(crate) fn next(&mut self) -> Option<&'a [u8]> {
         if self.rest.is_empty() {
             return None;
         }
