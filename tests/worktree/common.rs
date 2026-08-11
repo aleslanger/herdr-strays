@@ -49,6 +49,51 @@ pub fn repo_with_commit() -> TempDir {
     dir
 }
 
+/// A repository holding a submodule at `vendor/lib` with a dirty file inside.
+///
+/// Two repositories rather than one: a submodule is a gitlink to a repository
+/// with its own history, and the whole point of drilling into one is that the
+/// inner history is not the outer one. Faking it with a plain directory would
+/// test nothing that matters.
+///
+/// The returned directories must both outlive the test — the inner one is what
+/// the gitlink points at.
+pub fn repo_with_submodule() -> (TempDir, TempDir) {
+    let inner = tempfile::tempdir().expect("tempdir");
+    let inner_path = inner.path();
+    git(inner_path, &["init", "-q", "-b", "main"]);
+    git(inner_path, &["config", "user.email", "test@example.com"]);
+    git(inner_path, &["config", "user.name", "test"]);
+    std::fs::write(inner_path.join("inside.txt"), "original\n").unwrap();
+    git(inner_path, &["add", "-A"]);
+    git(inner_path, &["commit", "-qm", "inner"]);
+
+    let outer = repo_with_commit();
+    let outer_path = outer.path();
+    // Local clones of a file:// URL are what `git submodule add` accepts
+    // without a network, and recent git refuses a local path outright unless
+    // told it is allowed.
+    git(
+        outer_path,
+        &[
+            "-c",
+            "protocol.file.allow=always",
+            "submodule",
+            "add",
+            "-q",
+            &format!("file://{}", inner_path.display()),
+            "vendor/lib",
+        ],
+    );
+    git(outer_path, &["add", "-A"]);
+    git(outer_path, &["commit", "-qm", "add submodule"]);
+
+    // Dirty inside the submodule, so it has something of its own to report.
+    std::fs::write(outer_path.join("vendor/lib/inside.txt"), "changed inside\n").unwrap();
+
+    (outer, inner)
+}
+
 /// Status markers and paths, in list order.
 pub fn markers(root: &Path) -> Vec<(char, String)> {
     list_strays(root)

@@ -5,6 +5,7 @@
 
 mod annotating;
 mod delegating;
+mod drilling;
 mod filtering;
 mod prompt;
 mod revisions;
@@ -229,6 +230,36 @@ pub struct View {
     pub revisions: Option<Revisions>,
     /// A transient message along the bottom.
     pub notice: Option<Notice>,
+    /// The submodules the reader has stepped into, outermost first.
+    ///
+    /// Empty is the ordinary view of every open project. Each entry is one
+    /// layer of drilling down, holding what it takes to put the previous view
+    /// back — see [`Layer`].
+    ///
+    /// Lives in `View` rather than `Data` because it is where the reader is
+    /// standing, not something git said: a refresh replaces `Data` wholesale,
+    /// and a stack that went with it would drop the reader back to the top of
+    /// the tree every time a file was written.
+    pub drilled: Vec<Layer>,
+}
+
+/// One submodule the reader stepped into, and the view it covered up.
+///
+/// Held so leaving is exact rather than approximate: the projects come back as
+/// they were, and the cursor lands on the submodule row the reader entered
+/// through rather than at the top of a list they have to re-find their place
+/// in.
+#[derive(Debug, Clone)]
+pub struct Layer {
+    /// The projects that were listed before stepping in.
+    pub projects: Vec<ProjectStrays>,
+    /// Which row the cursor was on — the submodule row itself.
+    pub selected: usize,
+    /// What was folded away out there, so stepping back does not unfold it.
+    pub collapsed: BTreeSet<crate::tree::NodeId>,
+    /// The submodule's path within the project that contained it, for the
+    /// breadcrumb trail.
+    pub at: PathBuf,
 }
 
 /// What the reader is part-way through typing.
@@ -402,6 +433,7 @@ impl App {
                 split_diff: false,
                 show_blame: false,
                 revisions: None,
+                drilled: Vec::new(),
                 notice: None,
             },
             input: Input::default(),
@@ -459,6 +491,7 @@ impl App {
                 show_blame: false,
                 revisions: None,
                 notice: None,
+                drilled: Vec::new(),
             },
             input: Input::default(),
             should_quit: false,
@@ -1068,6 +1101,7 @@ mod refresh_scroll_tests {
                 show_help: false,
                 help_scroll: 0,
                 split_diff: false,
+                drilled: Vec::new(),
             },
             input: Input {
                 delegating: None,
@@ -1123,6 +1157,7 @@ mod refresh_scroll_tests {
                 show_help: false,
                 help_scroll: 0,
                 split_diff: false,
+                drilled: Vec::new(),
             },
             input: Input {
                 delegating: None,
@@ -1175,6 +1210,7 @@ mod refresh_scroll_tests {
                 show_help: false,
                 help_scroll: 0,
                 split_diff: false,
+                drilled: Vec::new(),
             },
             input: Input {
                 delegating: None,

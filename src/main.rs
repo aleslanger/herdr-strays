@@ -339,6 +339,14 @@ fn handle_key(terminal: &mut Tui, app: App, key: KeyEvent, viewport: u16) -> io:
         Action::SelectPrevious => app.select_previous(),
         Action::ToggleCollapsed => app.toggle_collapsed(),
 
+        // Drilling down reroots the list on the submodule under the cursor, so
+        // its files are named as it names them rather than as the repository
+        // containing it does. Both are no-ops where they do not apply — these
+        // are movement keys, and running out of somewhere to go is not an
+        // error worth a message.
+        Action::EnterSubmodule => app.enter_submodule(),
+        Action::LeaveSubmodule => app.leave_submodule(),
+
         Action::ScrollDiffDown => app.scroll_diff_down(viewport),
         Action::ScrollDiffUp => app.scroll_diff_up(),
         Action::PageDiffDown => app.page_diff_down(viewport),

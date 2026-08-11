@@ -272,7 +272,8 @@ the bindings in force, so it names your keys and not the defaults.
 Action names, for the right-hand side:
 
 `quit`, `help`, `refresh`, `select-next`, `select-previous`,
-`toggle-collapsed`, `scroll-diff-down`, `scroll-diff-up`, `page-diff-down`,
+`toggle-collapsed`, `enter-submodule`, `leave-submodule`,
+`scroll-diff-down`, `scroll-diff-up`, `page-diff-down`,
 `page-diff-up`, `scroll-diff-home`, `scroll-diff-end`, `toggle-base`,
 `toggle-split-diff`, `toggle-show-all`, `toggle-scope`, `toggle-blame`,
 `toggle-history`,

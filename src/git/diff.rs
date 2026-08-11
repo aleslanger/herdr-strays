@@ -34,15 +34,27 @@ pub fn diff_for(repo: &Path, stray: &Stray, base: &Base) -> Result<Diff, GitErro
 }
 
 fn diff_tracked(repo: &Path, path: &Path, base: &Base) -> Result<Diff, GitError> {
+    // A file inside a submodule has to be diffed by the submodule: the outer
+    // repository tracks a gitlink, not the files below it, and answers for
+    // them with silence rather than an error.
+    let (owner, within) = super::submodule::owning_repo(repo, path);
+
+    // A submodule has its own history: a merge base or a named revision of the
+    // outer repository is not a revision there at all, and asking for one
+    // fails rather than answering. `HEAD` is the revision every repository
+    // has, and "what has changed inside this submodule since its own HEAD" is
+    // what the row is reporting in the first place.
+    let rev = if owner == repo { base.rev() } else { "HEAD" };
+
     // `--` separates the pathspec from revisions so a file named like a branch
     // cannot be reinterpreted as one.
     let out = run_git(
-        repo,
+        &owner,
         [
             "diff".as_ref(),
-            base.rev().as_ref(),
+            rev.as_ref(),
             "--".as_ref(),
-            path.as_os_str(),
+            within.as_os_str(),
         ],
     )?;
 

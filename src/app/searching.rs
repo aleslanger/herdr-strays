@@ -266,6 +266,7 @@ mod tests {
                 show_help: false,
                 help_scroll: 0,
                 split_diff: false,
+                drilled: Vec::new(),
             },
             input: Input {
                 delegating: None,

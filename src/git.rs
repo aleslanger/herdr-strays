@@ -11,3 +11,4 @@ pub mod history;
 pub mod run;
 pub mod stash;
 pub mod status;
+pub mod submodule;

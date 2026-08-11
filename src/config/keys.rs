@@ -34,6 +34,8 @@ pub enum Action {
     SelectNext,
     SelectPrevious,
     ToggleCollapsed,
+    EnterSubmodule,
+    LeaveSubmodule,
     ScrollDiffDown,
     ScrollDiffUp,
     PageDiffDown,
@@ -66,13 +68,15 @@ pub enum Action {
 impl Action {
     /// Every action, so a config file can be checked against the whole set and
     /// the help screen can be sure it has not forgotten one.
-    pub const ALL: [Action; 33] = [
+    pub const ALL: [Action; 35] = [
         Action::Quit,
         Action::Help,
         Action::Refresh,
         Action::SelectNext,
         Action::SelectPrevious,
         Action::ToggleCollapsed,
+        Action::EnterSubmodule,
+        Action::LeaveSubmodule,
         Action::ScrollDiffDown,
         Action::ScrollDiffUp,
         Action::PageDiffDown,
@@ -111,6 +115,8 @@ impl Action {
             Action::SelectNext => "select-next",
             Action::SelectPrevious => "select-previous",
             Action::ToggleCollapsed => "toggle-collapsed",
+            Action::EnterSubmodule => "enter-submodule",
+            Action::LeaveSubmodule => "leave-submodule",
             Action::ScrollDiffDown => "scroll-diff-down",
             Action::ScrollDiffUp => "scroll-diff-up",
             Action::PageDiffDown => "page-diff-down",
@@ -322,6 +328,16 @@ impl Default for Bindings {
         bind(Chord::plain(KeyCode::Up), Action::SelectPrevious);
         bind(Chord::plain(KeyCode::Enter), Action::ToggleCollapsed);
         bind(Chord::plain(KeyCode::Char(' ')), Action::ToggleCollapsed);
+
+        // Stepping into a submodule is not folding, so it is not ⏎. A submodule
+        // row looks like any other directory, and one key that folds on most
+        // rows but reroots the whole list on a few would move the reader
+        // somewhere they did not ask to go. The arrows say which way instead:
+        // right goes in, left comes back out.
+        bind(Chord::plain(KeyCode::Right), Action::EnterSubmodule);
+        bind(Chord::plain(KeyCode::Char('l')), Action::EnterSubmodule);
+        bind(Chord::plain(KeyCode::Left), Action::LeaveSubmodule);
+        bind(Chord::plain(KeyCode::Backspace), Action::LeaveSubmodule);
 
         // Line-at-a-time on the shifted pair, a screenful on f/b.
         bind(Chord::plain(KeyCode::Char('J')), Action::ScrollDiffDown);

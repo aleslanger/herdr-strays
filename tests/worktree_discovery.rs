@@ -259,6 +259,241 @@ fn a_real_submodule_is_reported_as_a_directory_not_an_editable_file() {
     assert!(outer.path().join("vendor/lib").is_dir());
 }
 
+/// An outer repository with a submodule at `vendor/lib`, both real.
+///
+/// Returned in the order (outer, inner) — the inner one has to be kept alive,
+/// because dropping the `TempDir` deletes the repository the gitlink points at.
+fn repo_with_submodule() -> (tempfile::TempDir, tempfile::TempDir) {
+    let outer = repo_with_commit();
+    let inner = repo_with_commit();
+
+    let inner_path = inner.path().to_string_lossy().into_owned();
+    git(
+        outer.path(),
+        &[
+            "-c",
+            "protocol.file.allow=always",
+            "submodule",
+            "add",
+            "--quiet",
+            &inner_path,
+            "vendor/lib",
+        ],
+    );
+    git(outer.path(), &["commit", "-qm", "add submodule"]);
+
+    (outer, inner)
+}
+
+#[test]
+fn files_changed_inside_a_submodule_are_listed_by_their_full_path() {
+    // The outer `git status` reports one entry for the whole submodule and
+    // never names a file inside it — verified against real git output, which
+    // is a single `1 .M S.MU 160000 ... vendor/lib` record. So the files below
+    // can only come from asking the submodule's own repository.
+    let (outer, _inner) = repo_with_submodule();
+    let sub = outer.path().join("vendor/lib");
+
+    std::fs::create_dir_all(sub.join("src")).unwrap();
+    std::fs::write(sub.join("committed.txt"), "edited\n").unwrap();
+    std::fs::write(sub.join("src/brand-new.rs"), "fn main() {}\n").unwrap();
+
+    let strays = list_strays(outer.path()).expect("status succeeds");
+    let paths: Vec<String> = strays
+        .iter()
+        .map(|s| s.path.to_string_lossy().into_owned())
+        .collect();
+
+    assert!(
+        paths.iter().any(|p| p == "vendor/lib/committed.txt"),
+        "the edited file inside the submodule is missing from {paths:?}"
+    );
+    assert!(
+        paths.iter().any(|p| p == "vendor/lib/src/brand-new.rs"),
+        "the new file inside the submodule is missing from {paths:?}"
+    );
+}
+
+#[test]
+fn a_file_inside_a_submodule_keeps_the_status_its_own_repository_gives_it() {
+    // Not all of them collapse to "modified": an untracked file inside a
+    // submodule is untracked, and saying otherwise would lose the one thing
+    // that distinguishes a new file from an edited one.
+    let (outer, _inner) = repo_with_submodule();
+    let sub = outer.path().join("vendor/lib");
+
+    std::fs::write(sub.join("committed.txt"), "edited\n").unwrap();
+    std::fs::write(sub.join("fresh.txt"), "new\n").unwrap();
+
+    let strays = list_strays(outer.path()).expect("status succeeds");
+    let status_of = |path: &str| {
+        strays
+            .iter()
+            .find(|s| s.path == Path::new(path))
+            .unwrap_or_else(|| panic!("{path} missing from {strays:?}"))
+            .status
+            .clone()
+    };
+
+    assert_eq!(status_of("vendor/lib/committed.txt"), StrayStatus::Modified);
+    assert_eq!(status_of("vendor/lib/fresh.txt"), StrayStatus::Untracked);
+}
+
+#[test]
+fn the_submodule_itself_still_gets_a_row_of_its_own() {
+    // The gitlink row carries what no file inside can say: that the recorded
+    // commit moved. Replacing it with its contents would make a commit bump
+    // vanish from a list whose whole job is to report it.
+    let (outer, _inner) = repo_with_submodule();
+    std::fs::write(outer.path().join("vendor/lib/committed.txt"), "dirty\n").unwrap();
+
+    let strays = list_strays(outer.path()).expect("status succeeds");
+    let sub = strays
+        .iter()
+        .find(|s| s.path == Path::new("vendor/lib"))
+        .unwrap_or_else(|| panic!("submodule row missing from {strays:?}"));
+
+    assert_eq!(sub.status, StrayStatus::Submodule);
+    assert_eq!(
+        target_path(outer.path(), sub).unwrap_err(),
+        EditorError::IsSubmodule,
+        "it is still a directory, so it still must not reach an editor"
+    );
+}
+
+#[test]
+fn a_clean_submodule_contributes_no_rows_beyond_its_own() {
+    // Nothing inside differs from the submodule's HEAD, so there is nothing to
+    // list — and, because the `<sub>` flags say so, no git call to make either.
+    let (outer, _inner) = repo_with_submodule();
+
+    let strays = list_strays(outer.path()).expect("status succeeds");
+    let inside: Vec<_> = strays
+        .iter()
+        .filter(|s| s.path.starts_with("vendor/lib") && s.path != Path::new("vendor/lib"))
+        .collect();
+
+    assert!(inside.is_empty(), "a clean submodule listed {inside:?}");
+}
+
+#[test]
+fn a_file_inside_a_submodule_has_a_diff_with_its_changes_in_it() {
+    // Measured: `git diff HEAD -- vendor/lib/src/a.rs` in the outer repository
+    // returns zero bytes, because what it tracks there is a gitlink and not
+    // the files below it. Listing the file while showing an empty diff beside
+    // it would be worse than not listing it at all.
+    use herdr_strays::git::base::Base;
+    use herdr_strays::git::diff::diff_for;
+    use herdr_strays::model::{Diff, Stray};
+
+    let (outer, _inner) = repo_with_submodule();
+    std::fs::write(
+        outer.path().join("vendor/lib/committed.txt"),
+        "first\nsecond\n",
+    )
+    .unwrap();
+
+    let stray = Stray::new(StrayStatus::Modified, "vendor/lib/committed.txt");
+    let diff = diff_for(outer.path(), &stray, &Base::Head).expect("diff succeeds");
+
+    let Diff::Text(lines) = diff else {
+        panic!("expected a textual diff, got {diff:?}");
+    };
+    assert!(
+        lines.iter().any(|l| l.text.starts_with('+')),
+        "no added line in the diff of a file inside a submodule: {lines:?}"
+    );
+}
+
+#[test]
+fn an_untracked_file_inside_a_submodule_reads_as_all_additions() {
+    // This path never asks git at all — it reads the file off disk — so it has
+    // to keep working when the file lives under a submodule.
+    use herdr_strays::git::base::Base;
+    use herdr_strays::git::diff::diff_for;
+    use herdr_strays::model::{Diff, Stray};
+
+    let (outer, _inner) = repo_with_submodule();
+    std::fs::write(outer.path().join("vendor/lib/fresh.txt"), "brand new\n").unwrap();
+
+    let stray = Stray::new(StrayStatus::Untracked, "vendor/lib/fresh.txt");
+    let diff = diff_for(outer.path(), &stray, &Base::Head).expect("diff succeeds");
+
+    let Diff::Text(lines) = diff else {
+        panic!("expected a textual diff, got {diff:?}");
+    };
+    assert!(
+        lines.iter().any(|l| l.text.contains("brand new")),
+        "the file's contents are missing from {lines:?}"
+    );
+}
+
+#[test]
+fn a_submodule_expands_into_directories_the_tree_can_fold() {
+    // The point of the whole exercise: the rows inside a submodule have to be
+    // navigable the same way the root's are — a directory row that collapses,
+    // with the files under it — rather than one opaque entry.
+    use std::collections::BTreeSet;
+
+    use herdr_strays::discover::Project;
+    use herdr_strays::tree::{flatten, NodeId, ProjectStrays, Row};
+
+    let (outer, _inner) = repo_with_submodule();
+    let sub = outer.path().join("vendor/lib");
+    std::fs::create_dir_all(sub.join("src")).unwrap();
+    std::fs::write(sub.join("src/deep.rs"), "fn main() {}\n").unwrap();
+
+    let root = outer.path().to_path_buf();
+    let entry = ProjectStrays {
+        project: Project {
+            root: root.clone(),
+            name: "outer".into(),
+        },
+        strays: list_strays(&root).expect("status succeeds"),
+        branch: None,
+        upstream: None,
+        touched: None,
+        agent: None,
+        error: None,
+    };
+    let projects = vec![entry];
+
+    let rows = flatten(&projects, &BTreeSet::new());
+    let directories: Vec<String> = rows
+        .iter()
+        .filter_map(|row| match row {
+            Row::Directory { path, .. } => Some(path.to_string_lossy().into_owned()),
+            _ => None,
+        })
+        .collect();
+
+    assert!(
+        directories.iter().any(|d| d == "vendor"),
+        "no vendor/ row in {directories:?}"
+    );
+    assert!(
+        directories.iter().any(|d| d == "vendor/lib/src"),
+        "the submodule's own directories must be walkable too: {directories:?}"
+    );
+
+    // And folding one of them really does hide what is underneath.
+    let folded: BTreeSet<NodeId> = std::iter::once(NodeId::Directory(
+        root.clone(),
+        std::path::PathBuf::from("vendor"),
+    ))
+    .collect();
+    let folded_rows = flatten(&projects, &folded);
+
+    assert!(
+        !folded_rows.iter().any(|row| matches!(
+            row,
+            Row::File { project, stray, .. }
+                if projects[*project].strays[*stray].path.starts_with("vendor")
+        )),
+        "folding vendor/ left files inside the submodule on screen"
+    );
+}
+
 #[test]
 fn scope_narrows_projects_to_one_workspace() {
     use std::collections::BTreeMap;

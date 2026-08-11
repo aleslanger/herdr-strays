@@ -42,35 +42,7 @@ pub(super) fn draw_tree(frame: &mut Frame, area: Rect, app: &App) {
         .map(|row| tree_item(app, row))
         .collect();
 
-    // A narrowed list says so in its own title: without it, a short list looks
-    // like a clean worktree rather than a filtered one.
-    let title = if app.input.filter.is_active() {
-        let matching = app.view.rows.iter().filter(|r| r.is_file()).count();
-        format!(
-            " /{} — {matching} of {} ",
-            app.input.filter.query,
-            app.total_strays()
-        )
-    } else if app.data.base.is_head() {
-        // The ordinary view says nothing about what it compares against:
-        // against the last commit is what this has always shown, and labelling
-        // it would put noise on the common case.
-        format!(
-            " strays ({} in {} projects) ",
-            app.total_strays(),
-            app.data.projects.len()
-        )
-    } else {
-        // Any other base must be named. A list showing a whole branch looks
-        // just like a list showing uncommitted work, only longer, and the
-        // difference matters too much to leave the reader to infer.
-        format!(
-            " vs {} ({} in {} projects) ",
-            app.data.base.label(),
-            app.total_strays(),
-            app.data.projects.len()
-        )
-    };
+    let title = tree_title(app, area.width);
     let list = List::new(items)
         .block(Block::default().borders(Borders::ALL).title(title))
         .highlight_style(
@@ -84,6 +56,96 @@ pub(super) fn draw_tree(frame: &mut Frame, area: Rect, app: &App) {
     state.select(Some(app.view.selected));
     frame.render_stateful_widget(list, area, &mut state);
 }
+
+/// What the list calls itself, given where the reader is standing.
+///
+/// The title is one line and everything competing for it is context the reader
+/// would otherwise have to infer: what is being compared against, what is
+/// narrowing the list, and — once they have stepped into a submodule — which
+/// repository they are looking at. That last one matters most when the list is
+/// empty, because then it is the only thing on screen saying where they are.
+///
+/// Inside a submodule the project count goes: the reader is in exactly one
+/// repository, and "in 1 projects" is noise dressed as information.
+fn tree_title(app: &App, width: u16) -> String {
+    let trail = app.breadcrumbs();
+
+    // A narrowed list says so in its own title: without it, a short list looks
+    // like a clean worktree rather than a filtered one.
+    if app.input.filter.is_active() {
+        let matching = app.view.rows.iter().filter(|r| r.is_file()).count();
+        let query = &app.input.filter.query;
+        let total = app.total_strays();
+        // Only the innermost crumb keeps its place beside a query. Both want
+        // the same line, and the filter is the more surprising of the two: it
+        // is why the list is short, and it is cleared with a keypress.
+        return match trail.last() {
+            Some(here) => format!(" {here} /{query} — {matching} of {total} "),
+            None => format!(" /{query} — {matching} of {total} "),
+        };
+    }
+
+    let count = app.total_strays();
+    if trail.is_empty() {
+        let projects = app.data.projects.len();
+        return if app.data.base.is_head() {
+            // The ordinary view says nothing about what it compares against:
+            // against the last commit is what this has always shown, and
+            // labelling it would put noise on the common case.
+            format!(" strays ({count} in {projects} projects) ")
+        } else {
+            // Any other base must be named. A list showing a whole branch looks
+            // just like a list showing uncommitted work, only longer, and the
+            // difference matters too much to leave the reader to infer.
+            format!(
+                " vs {} ({count} in {projects} projects) ",
+                app.data.base.label()
+            )
+        };
+    }
+
+    // The trail replaces the word "strays" rather than joining it. The name of
+    // the program is the least useful thing the line could carry once the
+    // reader is somewhere specific, and the room it frees is what lets the
+    // trail be shown at all.
+    let tail = if app.data.base.is_head() {
+        format!(" ({count}) ")
+    } else {
+        format!(" vs {} ({count}) ", app.data.base.label())
+    };
+
+    // Two for the borders the block draws either side of the title.
+    let room = usize::from(width).saturating_sub(tail.chars().count() + 2);
+    format!(" {}{tail}", elided(&trail, room))
+}
+
+/// Join the trail, dropping crumbs from the left until it fits.
+///
+/// From the left because where the reader is now outranks how they got there:
+/// the innermost submodule is the one whose files are on screen, and it is the
+/// last thing that should go.
+fn elided(trail: &[String], room: usize) -> String {
+    let full = trail.join(SEPARATOR);
+    if full.chars().count() <= room {
+        return full;
+    }
+
+    // Drop one crumb at a time rather than cutting mid-name: half a directory
+    // name reads as a different directory.
+    for from in 1..trail.len() {
+        let shortened = format!("…{SEPARATOR}{}", trail[from..].join(SEPARATOR));
+        if shortened.chars().count() <= room {
+            return shortened;
+        }
+    }
+
+    // Not even the innermost name fits on its own. Whatever is left of it still
+    // says more than an ellipsis alone.
+    trail.last().cloned().unwrap_or_default()
+}
+
+/// Between crumbs. Spaces either side so names do not run together.
+const SEPARATOR: &str = " › ";
 
 /// Render one tree row: a project, a directory, or a file.
 fn tree_item<'a>(app: &'a App, row: &'a Row) -> ListItem<'a> {

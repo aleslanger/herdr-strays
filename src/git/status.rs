@@ -24,12 +24,17 @@ use crate::model::{Stray, StrayStatus, Upstream};
 ///
 /// `.gitignore` is honoured under both settings — ignored paths only appear
 /// when `--ignored` is passed, and it never is.
+///
+/// Submodules are then followed into. Git reports one entry for a whole
+/// submodule and never names a file inside it, so the files there are only
+/// reachable by asking the submodule's own repository — see
+/// [`crate::git::submodule`].
 pub fn list_strays(repo: &Path) -> Result<Vec<Stray>, GitError> {
     let out = run_git(
         repo,
         ["status", "--porcelain=v2", "-z", "--untracked-files=all"],
     )?;
-    Ok(parse_status(&out))
+    Ok(crate::git::submodule::expanded(repo, parse_status(&out)))
 }
 
 /// List every file that differs from `base`, committed or not.

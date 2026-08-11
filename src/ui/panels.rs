@@ -427,6 +427,11 @@ pub(super) fn help_lines(bindings: &Bindings) -> Vec<Line<'static>> {
         bound(Action::SelectNext, "next row"),
         bound(Action::SelectPrevious, "previous row"),
         bound(Action::ToggleCollapsed, "fold or unfold"),
+        bound(
+            Action::EnterSubmodule,
+            "step into the submodule under the cursor",
+        ),
+        bound(Action::LeaveSubmodule, "step back out of it"),
         bound(Action::ScrollDiffDown, "scroll the diff down a line"),
         bound(Action::ScrollDiffUp, "scroll the diff up a line"),
         bound(Action::PageDiffDown, "scroll the diff down a screen"),
