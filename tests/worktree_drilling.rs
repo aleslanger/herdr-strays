@@ -215,3 +215,21 @@ fn row_labels(app: &herdr_strays::app::App) -> Vec<String> {
         })
         .collect()
 }
+
+/// The header names the submodule's branch, not the outer repository's.
+///
+/// The two are separate repositories with separate HEADs, and a branch name
+/// from the wrong one is worse than none: it reads as fact.
+#[test]
+fn the_branch_shown_inside_is_the_submodules_own() {
+    let (outer, _inner) = repo_with_submodule();
+
+    let app = app_for(outer.path());
+    let at = row_of_submodule(&app);
+    let inside = scanned(cursor_on(app, at).enter_submodule());
+
+    assert!(
+        inside.data.projects[0].branch.is_some(),
+        "a scan inside the submodule fills in its branch"
+    );
+}

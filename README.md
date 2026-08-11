@@ -46,6 +46,18 @@ committed" to "what is on this branch", which is the question you ask before
 opening a review — and the file list changes with it, so work you committed
 earlier on the branch is there too.
 
+**Looks inside submodules, and steps into them.**
+Git reports a submodule as one entry and never names a file below it, so a
+repository that vendors its dependencies shows a single unhelpful row where a
+dozen changed files are hiding. Here the files inside are listed too, under the
+submodule's path, each keeping the status its own repository gives it — a new
+file in a submodule still reads as untracked. That is the right view for a
+submodule of a dozen files and the wrong one once the submodule is a project in
+its own right, so `→` makes it the root: paths shorten to what it calls them,
+the header names its branch, and `←` peels the layer back off and puts your
+cursor where it was. A submodule that is merely bumped to a different commit is
+left alone, so nothing is spent reading a worktree that is clean.
+
 **Hands work to Claude without a context switch.**
 Write a prompt about the selected file and it lands in the agent running in that
 repository, with the path already attached. The text is typed into the agent's
@@ -80,7 +92,7 @@ nothing written to `refs/`.
 | **Views** | Strayed files, or `a` for every tracked file with changed ones highlighted. |
 | **`.gitignore`** | Honoured. Build output never reaches the tree. |
 | **Large directories** | A directory holding 25 or more strays starts folded with its count shown, so a generated-output tree cannot bury real work. |
-| **Submodules** | Shown as `S`, never offered to an editor — a gitlink is a directory. |
+| **Submodules** | The gitlink is shown as `S` and never offered to an editor — a gitlink is a directory. What changed *inside* it is listed too, under its path, each file keeping the status its own repository gives it. `→` makes the submodule the root when it deserves a list of its own. |
 
 Press `a` and unchanged files join the list, dimmed, so a change stands out
 against the repository around it:
@@ -97,6 +109,8 @@ Press `?` in the pane for this list at any time.
 |---|---|
 | `j` `k` / `↓` `↑` | move |
 | `⏎` `space` | fold or unfold |
+| `l` / `→` | step into the submodule under the cursor |
+| `⌫` / `←` | step back out of it |
 | `J` `K` | scroll the diff by a line |
 | `f` `b` | scroll the diff by a screen |
 | `g` `G` | jump to the top or end of the diff |
