@@ -5,7 +5,7 @@
 
 id = "aleslanger.strays"
 name = "strays"
-version = "1.0.2"
+version = "1.1.0"
 min_herdr_version = "0.7.0"
 description = "Which files strayed from HEAD — see the diff, jump to your editor."
 platforms = ["linux", "macos", "windows"]

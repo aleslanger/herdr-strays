@@ -4,6 +4,35 @@ Notable changes to strays. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the versions
 follow [semantic versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.0] - 2026-08-12
+
+### Added
+
+- **What changed inside a submodule.** Git reports a submodule as one entry
+  and never names a file below it, so a repository that vendors its
+  dependencies showed a single unhelpful row where a dozen changed files were
+  hiding. The files inside are now listed under the submodule's path, each
+  keeping the status its own repository gives it — a new file in a submodule
+  still reads as untracked rather than collapsing to "modified". Diffs for
+  them are taken against the submodule's own `HEAD`, since a revision of the
+  outer repository is not a revision there at all.
+- **Stepping into a submodule.** `→` or `l` makes the submodule under the
+  cursor the root: paths shorten to what it calls them, the header names its
+  branch, and the outer project's files are out of the way. `←` or
+  `backspace` peels the layer back off and puts the cursor where it was. Not
+  `⏎`, which folds — a submodule row looks like any other directory, and
+  rerooting the list from a key held down to move around would take you
+  somewhere you did not ask to go. The trail of submodules stepped into is
+  named in the list's title, elided from the left by whole names when it does
+  not fit.
+
+### Performance
+
+- A submodule that is merely bumped to a different commit — the ordinary state
+  of a vendored dependency — is no longer read. Its worktree is clean, so the
+  `git status` inside it cost a process to be told nothing. The `<sub>` flags
+  git already reports say which submodules are worth descending into.
+
 ## [1.0.2] - 2026-08-09
 
 ### Fixed
@@ -167,7 +196,8 @@ First release.
 - A key reference, a show-all-tracked-files view, and auto-folding for
   oversized directories.
 
-[Unreleased]: https://github.com/aleslanger/herdr-strays/compare/v1.0.2...HEAD
+[Unreleased]: https://github.com/aleslanger/herdr-strays/compare/v1.1.0...HEAD
+[1.1.0]: https://github.com/aleslanger/herdr-strays/releases/tag/v1.1.0
 [1.0.2]: https://github.com/aleslanger/herdr-strays/releases/tag/v1.0.2
 [1.0.1]: https://github.com/aleslanger/herdr-strays/releases/tag/v1.0.1
 [1.0.0]: https://github.com/aleslanger/herdr-strays/releases/tag/v1.0.0
