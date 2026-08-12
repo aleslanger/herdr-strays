@@ -314,18 +314,32 @@ mod tests {
     #[test]
     fn joining_with_the_platform_separator_is_what_this_avoids() {
         // Pins the reason `under` exists rather than its result, so the test
-        // above cannot quietly stop being a regression test. On Windows
-        // `join` disagrees with git and this is the difference; on Linux the
-        // two agree and there is nothing to tell apart.
+        // above cannot quietly stop being a regression test.
+        //
+        // Compared as text, not as paths. `Path`'s `PartialEq` matches
+        // component by component, and on Windows both `/` and `\` separate
+        // components — so the two spellings compare *equal* there and the
+        // difference this is about is invisible. That is the same blindness
+        // the bug relied on: everything downstream reads these paths as text.
         let by_hand = under(Path::new("vendor/lib"), Path::new("src/a.rs"));
         let by_join = Path::new("vendor/lib").join(Path::new("src/a.rs"));
 
+        assert_eq!(
+            by_hand.to_string_lossy(),
+            "vendor/lib/src/a.rs",
+            "the spelling git uses"
+        );
         if std::path::MAIN_SEPARATOR == '/' {
-            assert_eq!(by_hand, by_join, "nothing to tell apart on this platform");
+            assert_eq!(
+                by_join.to_string_lossy(),
+                by_hand.to_string_lossy(),
+                "nothing to tell apart on this platform"
+            );
         } else {
             assert_ne!(
-                by_hand, by_join,
-                "`join` must be the wrong answer here — otherwise the other \
+                by_join.to_string_lossy(),
+                by_hand.to_string_lossy(),
+                "`join` must spell it differently here — otherwise the other \
                  test is passing for a reason that will not hold on Windows"
             );
         }
