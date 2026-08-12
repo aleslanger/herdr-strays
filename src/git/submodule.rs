@@ -110,11 +110,26 @@ fn strays_inside_to_depth(repo: &Path, at: &Path, depth: usize) -> Vec<Stray> {
         }
         inside.push(Stray {
             status: stray.status,
-            path: at.join(&stray.path),
+            path: under(at, &stray.path),
         });
     }
 
     inside
+}
+
+/// Place `path` under `at`, the way git would have spelled it.
+///
+/// Not [`Path::join`]: that separates with the platform's separator, which on
+/// Windows is a backslash. Every other separator in these paths came from git
+/// and is a forward slash, and the tree, the filter and the diff all read them
+/// that way — so one backslash in the middle is a path that belongs to neither
+/// convention.
+fn under(at: &Path, path: &Path) -> PathBuf {
+    PathBuf::from(format!(
+        "{}/{}",
+        at.to_string_lossy(),
+        path.to_string_lossy()
+    ))
 }
 
 /// The submodules in a status output whose insides are worth a `git status`.
@@ -275,6 +290,45 @@ mod tests {
         // Never seen from git, but the parser must not index past the end.
         let flags = Flags::parse(b"S").expect("still starts with S");
         assert!(!flags.has_contents_to_read());
+    }
+
+    #[test]
+    fn a_path_inside_a_submodule_is_spelled_the_way_git_spells_it() {
+        // `PathBuf::join` uses the platform separator, so on Windows it built
+        // `vendor/lib\src/a.rs` — a backslash where git put a slash, in a path
+        // whose other separators came from git and stayed forward. Caught by
+        // Windows CI, never by a Linux run, where `join` happens to agree.
+        //
+        // Nothing downstream survives the mixture. The tree splits on `/` to
+        // build its directory rows, the filter matches what is displayed, and
+        // the diff strips the submodule prefix off again.
+        let joined = under(Path::new("vendor/lib"), Path::new("src/a.rs"));
+
+        assert_eq!(
+            joined.to_string_lossy(),
+            "vendor/lib/src/a.rs",
+            "git speaks in forward slashes on every platform, and so must this"
+        );
+    }
+
+    #[test]
+    fn joining_with_the_platform_separator_is_what_this_avoids() {
+        // Pins the reason `under` exists rather than its result, so the test
+        // above cannot quietly stop being a regression test. On Windows
+        // `join` disagrees with git and this is the difference; on Linux the
+        // two agree and there is nothing to tell apart.
+        let by_hand = under(Path::new("vendor/lib"), Path::new("src/a.rs"));
+        let by_join = Path::new("vendor/lib").join(Path::new("src/a.rs"));
+
+        if std::path::MAIN_SEPARATOR == '/' {
+            assert_eq!(by_hand, by_join, "nothing to tell apart on this platform");
+        } else {
+            assert_ne!(
+                by_hand, by_join,
+                "`join` must be the wrong answer here — otherwise the other \
+                 test is passing for a reason that will not hold on Windows"
+            );
+        }
     }
 
     #[test]
