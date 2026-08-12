@@ -4,6 +4,18 @@ Notable changes to strays. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the versions
 follow [semantic versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.1] - 2026-08-12
+
+### Fixed
+
+- Files inside a submodule were listed under a path that mixed separators on
+  Windows — `vendor/lib\committed.txt`, a backslash where git had put a slash.
+  Every other separator in these paths comes from git and stays forward, and
+  the tree, the filter and the diff all read them that way, so a path that is
+  half one convention and half the other belongs to neither: the files were
+  effectively invisible. 1.1.0 is affected on Windows only; nothing else
+  changed.
+
 ## [1.1.0] - 2026-08-12
 
 ### Added
@@ -196,7 +208,8 @@ First release.
 - A key reference, a show-all-tracked-files view, and auto-folding for
   oversized directories.
 
-[Unreleased]: https://github.com/aleslanger/herdr-strays/compare/v1.1.0...HEAD
+[Unreleased]: https://github.com/aleslanger/herdr-strays/compare/v1.1.1...HEAD
+[1.1.1]: https://github.com/aleslanger/herdr-strays/releases/tag/v1.1.1
 [1.1.0]: https://github.com/aleslanger/herdr-strays/releases/tag/v1.1.0
 [1.0.2]: https://github.com/aleslanger/herdr-strays/releases/tag/v1.0.2
 [1.0.1]: https://github.com/aleslanger/herdr-strays/releases/tag/v1.0.1
